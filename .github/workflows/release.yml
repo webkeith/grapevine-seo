@@ -1,0 +1,112 @@
+# ═══════════════════════════════════════════════════════════════════════
+#  Grapevine SEO — GitHub Actions Release Workflow
+#
+#  Triggers: push of a version tag (e.g. v2.0.1)
+#  What it does:
+#    1. Builds a clean plugin ZIP (excludes dev files)
+#    2. Creates a GitHub Release with the ZIP attached
+#    3. Plugin Update Checker polls this release → WP sees the update
+#
+#  Usage:
+#    git tag v2.0.1 && git push origin v2.0.1
+# ═══════════════════════════════════════════════════════════════════════
+name: Build & Release Plugin
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]*'   # e.g. v2.0.1, v2.1.0-beta
+
+permissions:
+  contents: write   # needed to create releases
+
+jobs:
+  release:
+    name: Build ZIP and publish Release
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ───────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history so git log works for changelog
+
+      # ── 2. Parse version from tag ─────────────────────────────────
+      - name: Parse version
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME}"          # e.g. v2.0.1
+          VER="${TAG#v}"                    # strip leading "v" → 2.0.1
+          echo "tag=$TAG"   >> "$GITHUB_OUTPUT"
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+
+      # ── 3. Verify Version header matches tag ──────────────────────
+      - name: Verify plugin version
+        run: |
+          HEADER_VER=$(grep -oP "(?<=Version:\s{6})[\d.]+" grapevine-seo.php)
+          TAG_VER="${{ steps.version.outputs.version }}"
+          echo "Plugin header version: $HEADER_VER"
+          echo "Tag version:           $TAG_VER"
+          if [ "$HEADER_VER" != "$TAG_VER" ]; then
+            echo "::error::Version mismatch! Update the Version header in grapevine-seo.php to $TAG_VER before tagging."
+            exit 1
+          fi
+
+      # ── 4. Build plugin ZIP ───────────────────────────────────────
+      - name: Build plugin ZIP
+        run: |
+          PLUGIN="grapevine-seo"
+          VER="${{ steps.version.outputs.version }}"
+          BUILD_DIR="/tmp/${PLUGIN}"
+
+          # Copy plugin files — exclude dev/CI artifacts
+          rsync -av --exclude='.git' \
+                    --exclude='.github' \
+                    --exclude='.gitignore' \
+                    --exclude='*.md' \
+                    --exclude='composer.json' \
+                    --exclude='composer.lock' \
+                    --exclude='phpcs.xml' \
+                    --exclude='lib/plugin-update-checker/examples' \
+                    --exclude='lib/plugin-update-checker/README.md' \
+                    --exclude='lib/plugin-update-checker/composer.json' \
+                    --exclude='lib/plugin-update-checker/vendor/bin' \
+                    ./ "$BUILD_DIR/"
+
+          # Create ZIP named plugin-slug.zip (PUC expects this)
+          cd /tmp
+          zip -r "${PLUGIN}.zip" "${PLUGIN}/" -x "*.DS_Store"
+          ls -lh "${PLUGIN}.zip"
+          echo "ZIP_PATH=/tmp/${PLUGIN}.zip" >> "$GITHUB_ENV"
+
+      # ── 5. Generate changelog from git log ───────────────────────
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            LOG=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s" --no-merges)
+          else
+            LOG=$(git log --pretty=format:"- %s" --no-merges | head -20)
+          fi
+          echo "log<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$LOG"     >> "$GITHUB_OUTPUT"
+          echo "EOF"      >> "$GITHUB_OUTPUT"
+
+      # ── 6. Create GitHub Release with ZIP asset ───────────────────
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "Grapevine SEO ${{ steps.version.outputs.version }}"
+          body: |
+            ## What's Changed
+            ${{ steps.changelog.outputs.log }}
+
+            ---
+            **Installation:** Download `grapevine-seo.zip` below and upload via WordPress → Plugins → Add New → Upload Plugin.
+            **Auto-update:** If already installed, WordPress will show the update notification automatically.
+          files: ${{ env.ZIP_PATH }}
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.version, '-') }}
