@@ -1,6 +1,11 @@
 === Grapevine SEO ===
+<<<<<<< HEAD
 Contributors: keithquinones
 Tags: schema, seo, structured data, rich results, json-ld
+=======
+Contributors: Keith QUinones
+Tags: schema, json-ld, seo, structured data, rich results
+>>>>>>> 788ab2a3c2f33306697c55a11186759383d7966c
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
