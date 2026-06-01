@@ -77,7 +77,7 @@ Grapevine SEO is a dual-purpose plugin combining Google Rich Results-compliant J
 Yes. Grapevine SEO detects if Yoast SEO or Rank Math is active and reads their stored keyword and meta values for SEO analysis scoring. Schema output is independent of those plugins.
 
 = Does this generate an XML sitemap? =
-Yes. A sitemap index is available at yoursite.com/sitemap.xml. It is linked in your robots.txt automatically.
+Yes. A sitemap index is available at https://grapevinepr.com.au/sitemap.xml. It is linked in your robots.txt automatically.
 
 = Does this support WooCommerce? =
 Yes. The WooCommerce bridge pulls live price, SKU, stock status, ratings, and product gallery images directly from WooCommerce.
@@ -120,7 +120,11 @@ Yes. The WooCommerce bridge pulls live price, SKU, stock status, ratings, and pr
 * CPT-aware breadcrumbs
 
 = 2.0.0 =
+<<<<<<< HEAD
 * Initial release of Grapevine SEO
+=======
+* Full prefix rename: RAS_ → GVSEO_, _ras_ → _gvseo_
+>>>>>>> 0d2a8a68fc1f3939cc462097681e414f0c8118cc
 * GitHub Update Checker integration (Plugin Update Checker v5.3)
 * SEO Analysis Engine with 22 initial checks
 * Light theme admin interface
