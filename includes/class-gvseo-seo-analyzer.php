@@ -129,9 +129,9 @@ class GVSEO_SEO_Analyzer {
         $noindex = $live['noindex'];
         $canonical = $live['canonical'] ?: $url;
 
-        // Focus keyword always comes from Grapevine's own field (it's what the
-        // user tells us to target — not something another plugin sets).
-        $kw      = strtolower( trim( (string) get_post_meta( $post_id, '_gvseo_focus_kw', true ) ) );
+        // Focus keyword: read from Grapevine first; if empty and another SEO plugin
+        // is active, fall back to their stored keyword so checks are still useful.
+        $kw = GVSEO_Compat::get_focus_keyword( $post_id );
 
         $s_mode     = get_post_meta( $post_id, '_gvseo_schema_mode', true );
         $s_type     = get_post_meta( $post_id, '_gvseo_schema_type', true );
@@ -825,7 +825,7 @@ class GVSEO_SEO_Analyzer {
      */
     private static function has_post_with_same_title( $title, $exclude_id ) {
         global $wpdb;
-        $count = (int) $wpdb->get_var( $wpdb->prepare(
+        $count = (int) $wpdb->get_var( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
             "SELECT COUNT(*) FROM {$wpdb->posts}
              WHERE post_title = %s AND post_status = 'publish' AND ID != %d",
             $title, $exclude_id
@@ -839,7 +839,7 @@ class GVSEO_SEO_Analyzer {
     private static function has_duplicate_meta( $meta_key, $value, $exclude_id ) {
         global $wpdb;
         if ( ! $value ) { return false; }
-        $count = (int) $wpdb->get_var( $wpdb->prepare(
+        $count = (int) $wpdb->get_var( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
             "SELECT COUNT(*) FROM {$wpdb->postmeta} pm
              JOIN {$wpdb->posts} p ON pm.post_id = p.ID
              WHERE pm.meta_key = %s AND pm.meta_value = %s
@@ -857,7 +857,7 @@ class GVSEO_SEO_Analyzer {
         global $wpdb;
         $slug    = basename( rtrim( $url, '/' ) );
         $pattern = '%' . $wpdb->esc_like( $slug ) . '%';
-        $count   = (int) $wpdb->get_var( $wpdb->prepare(
+        $count   = (int) $wpdb->get_var( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
             "SELECT COUNT(*) FROM {$wpdb->posts}
              WHERE post_content LIKE %s
                AND post_status = 'publish'
@@ -906,7 +906,7 @@ class GVSEO_SEO_Analyzer {
 
         if ( is_wp_error( $response ) ) {
             // HTTP failed — log silently and return empty (checks will show warnings).
-            error_log( '[Grapevine SEO] Page fetch failed for ' . $url . ': ' . $response->get_error_message() );
+            error_log( '[Grapevine SEO] Page fetch failed for ' . $url . ': ' . $response->get_error_message() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
             return $empty;
         }
 

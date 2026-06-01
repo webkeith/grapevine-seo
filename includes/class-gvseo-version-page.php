@@ -193,7 +193,7 @@ class GVSEO_Version_Page {
                                 <div class="gvseo-cl-header">
                                     <div class="gvseo-cl-version-row">
                                         <span class="gvseo-cl-version">v<?php echo esc_html( $release['version'] ); ?></span>
-                                        <span class="gvseo-cl-type" style="background:<?php echo $type_bg; ?>;color:<?php echo $type_color; ?>;">
+                                        <span class="gvseo-cl-type" style="background:<?php echo esc_attr( $type_bg ); ?>;color:<?php echo esc_attr( $type_color ); ?>;">
                                             <?php echo esc_html( strtoupper( $release['type'] ) ); ?>
                                         </span>
                                         <?php if ( $release['version'] === $current ) : ?>
@@ -265,8 +265,8 @@ class GVSEO_Version_Page {
                                     <tr>
                                         <td><code>v<?php echo esc_html( $ver ); ?></code></td>
                                         <td>
-                                            <span style="color:<?php echo $color; ?>; font-weight:700;">
-                                                <?php echo $icon; ?> <?php echo $ran ? 'Applied' : 'Pending'; ?>
+                                            <span style="color:<?php echo esc_attr( $color ); ?>; font-weight:700;">
+                                                <?php echo esc_html( $icon ); ?> <?php echo $ran ? 'Applied' : 'Pending'; ?>
                                             </span>
                                         </td>
                                         <td>
@@ -299,7 +299,7 @@ class GVSEO_Version_Page {
                                             <span class="gvseo-he-version">
                                                 v<?php echo esc_html( $entry['from'] ); ?> → v<?php echo esc_html( $entry['to'] ); ?>
                                             </span>
-                                            <span class="gvseo-he-date"><?php echo esc_html( date( 'Y-m-d H:i', $entry['timestamp'] ) ); ?></span>
+                                            <span class="gvseo-he-date"><?php echo esc_html( gmdate( 'Y-m-d H:i', $entry['timestamp'] ) ); ?></span>
                                         </div>
                                         <div class="gvseo-he-meta">
                                             PHP <?php echo esc_html( $entry['php_version'] ); ?> &nbsp;·&nbsp;

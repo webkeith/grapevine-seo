@@ -38,16 +38,16 @@ class GVSEO_SEO_Page {
                         <div class="gvseo-gauge-wrap">
                             <canvas id="gvseo-gauge" width="200" height="200"></canvas>
                             <div class="gvseo-gauge-center">
-                                <span class="gvseo-gauge-num"><?php echo $avg; ?></span>
-                                <span class="gvseo-gauge-lbl"><?php echo self::label_text( GVSEO_SEO_Analyzer::label( $avg ) ); ?></span>
+                                <span class="gvseo-gauge-num"><?php echo (int) $avg; ?></span>
+                                <span class="gvseo-gauge-lbl"><?php echo esc_html( self::label_text( GVSEO_SEO_Analyzer::label( $avg ) ) ); ?></span>
                             </div>
                         </div>
                         <div class="gvseo-gauge-legend">
                             <?php foreach ( [ 'excellent' => [ 'Excellent', '#10b981' ], 'good' => [ 'Good', '#3b82f6' ], 'needs_work' => [ 'Needs Work', '#f59e0b' ], 'poor' => [ 'Poor', '#ef4444' ] ] as $k => [ $lbl, $col ] ) : ?>
                                 <div class="gvseo-legend-row">
-                                    <span class="gvseo-legend-dot" style="background:<?php echo $col; ?>"></span>
-                                    <span class="gvseo-legend-lbl"><?php echo $lbl; ?></span>
-                                    <span class="gvseo-legend-val"><?php echo $summary[ $k ]; ?></span>
+                                    <span class="gvseo-legend-dot" style="background:<?php echo esc_attr( $col ); ?>"></span>
+                                    <span class="gvseo-legend-lbl"><?php echo esc_html( $lbl ); ?></span>
+                                    <span class="gvseo-legend-val"><?php echo (int) $summary[ $k ]; ?></span>
                                 </div>
                             <?php endforeach; ?>
                         </div>
@@ -69,9 +69,9 @@ class GVSEO_SEO_Page {
                             ];
                             foreach ( $cats as [ $lbl, $col, $cnt ] ) : ?>
                                 <div class="gvseo-dl-row">
-                                    <span class="gvseo-dl-dot" style="background:<?php echo $col; ?>"></span>
-                                    <span><?php echo $lbl; ?></span>
-                                    <strong><?php echo $cnt; ?></strong>
+                                    <span class="gvseo-dl-dot" style="background:<?php echo esc_attr( $col ); ?>"></span>
+                                    <span><?php echo esc_html( $lbl ); ?></span>
+                                    <strong><?php echo (int) $cnt; ?></strong>
                                 </div>
                             <?php endforeach; ?>
                         </div>
@@ -83,9 +83,9 @@ class GVSEO_SEO_Page {
                     <div class="gvseo-card-head"><h3>⚡ Run Analysis</h3><p>Scan all pages to refresh scores</p></div>
                     <div class="gvseo-card-body">
                         <div class="gvseo-run-stats">
-                            <div class="gvseo-rs"><span class="gvseo-rs-num" id="gvseo-stat-total"><?php echo $total; ?></span><span>Total</span></div>
-                            <div class="gvseo-rs"><span class="gvseo-rs-num gvseo-col-blue" id="gvseo-stat-analyzed"><?php echo $analyzed; ?></span><span>Analyzed</span></div>
-                            <div class="gvseo-rs"><span class="gvseo-rs-num gvseo-col-yellow" id="gvseo-stat-pending"><?php echo $total - $analyzed; ?></span><span>Pending</span></div>
+                            <div class="gvseo-rs"><span class="gvseo-rs-num" id="gvseo-stat-total"><?php echo (int) $total; ?></span><span>Total</span></div>
+                            <div class="gvseo-rs"><span class="gvseo-rs-num gvseo-col-blue" id="gvseo-stat-analyzed"><?php echo (int) $analyzed; ?></span><span>Analyzed</span></div>
+                            <div class="gvseo-rs"><span class="gvseo-rs-num gvseo-col-yellow" id="gvseo-stat-pending"><?php echo (int) ( $total - $analyzed ); ?></span><span>Pending</span></div>
                         </div>
                         <div id="gvseo-prog-wrap" style="display:none; margin:12px 0;">
                             <div class="gvseo-prog-bar"><div class="gvseo-prog-fill" id="gvseo-prog-fill"></div></div>

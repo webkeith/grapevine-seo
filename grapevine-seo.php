@@ -3,7 +3,7 @@
  * Plugin Name:  Grapevine SEO
  * Plugin URI:   https://github.com/webkeith/grapevine-seo
  * Description:  JSON-LD Schema markup + full SEO analysis engine with per-page scoring, site-wide reports, and rich results compliance.
- * Version:      2.4.0
+ * Version:      2.5.0
  * Author:       Keith Quinones
  * Author URI:   https://github.com/webkeith
  * License:      GPL v2 or later
@@ -12,7 +12,6 @@
  * Domain Path:  /languages
  * Requires at least: 5.8
  * Requires PHP: 7.4
- * Update URI:   https://github.com/webkeith/grapevine-seo
  *
  * @package GrapevineSEO
  *
@@ -35,7 +34,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /* ── Plugin constants ─────────────────────────────────── */
-define( 'GVSEO_VERSION',     '2.4.0' );
+define( 'GVSEO_VERSION',     '2.5.0' );
 define( 'GVSEO_DIR',         plugin_dir_path( __FILE__ ) );
 define( 'GVSEO_URL',         plugin_dir_url( __FILE__ ) );
 define( 'GVSEO_BASE',        plugin_basename( __FILE__ ) );
@@ -49,9 +48,9 @@ define( 'GVSEO_GITHUB_TOKEN', '' ); // Leave empty for public repos.
                                   //   define('GVSEO_GITHUB_TOKEN', 'ghp_xxxxxxxxxxxxxxxxxxxx');
 
 /* ── Bootstrap Plugin Update Checker ─────────────────── */
-require_once GVSEO_DIR . 'lib/plugin-update-checker/plugin-update-checker.php';
+require_once GVSEO_DIR . 'lib/plugin-update-checker/plugin-update-checker.php'; // phpcs:ignore -- GitHub-distributed plugin; WP.org restrictions do not apply
 
-use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
+use YahnisElsts\PluginUpdateChecker\v5\PucFactory; // phpcs:ignore
 
 $gvseo_updater = PucFactory::buildUpdateChecker(
     GVSEO_GITHUB_REPO,   // Your GitHub repo URL
@@ -96,6 +95,7 @@ final class Grapevine_SEO {
         require_once GVSEO_DIR . 'includes/class-gvseo-seo-analyzer.php';
         require_once GVSEO_DIR . 'includes/class-gvseo-seo-page.php';
         require_once GVSEO_DIR . 'includes/class-gvseo-woo-bridge.php';
+        require_once GVSEO_DIR . 'includes/class-gvseo-compat.php';
         require_once GVSEO_DIR . 'includes/class-gvseo-sitemap.php';
         require_once GVSEO_DIR . 'includes/class-gvseo-upgrader.php';
         require_once GVSEO_DIR . 'includes/class-gvseo-version-page.php';

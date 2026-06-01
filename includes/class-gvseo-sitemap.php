@@ -128,14 +128,6 @@ class GVSEO_Sitemap {
             'paged'          => $page,
             'orderby'        => 'modified',
             'order'          => 'DESC',
-            'meta_query'     => [
-                // Skip manually noindexed posts.
-                [
-                    'relation' => 'OR',
-                    [ 'key' => '_gvseo_noindex', 'compare' => 'NOT EXISTS' ],
-                    [ 'key' => '_gvseo_noindex', 'value' => '0' ],
-                ],
-            ],
         ] );
 
         $priorities = [
@@ -210,7 +202,7 @@ class GVSEO_Sitemap {
 
     private static function last_modified( $type ) {
         global $wpdb;
-        $date = $wpdb->get_var( $wpdb->prepare(
+        $date = $wpdb->get_var( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
             "SELECT MAX(post_modified_gmt) FROM {$wpdb->posts}
              WHERE post_type = %s AND post_status = 'publish'",
             $type

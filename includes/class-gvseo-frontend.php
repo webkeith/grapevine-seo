@@ -191,7 +191,7 @@ class GVSEO_Frontend {
             $s['email'] = $g['org_email'];
             $s['contactPoint'] = [ '@type' => 'ContactPoint', 'email' => $g['org_email'], 'contactType' => 'customer service' ];
         }
-        $same = array_filter( [ $g['social_fb'], $g['social_tw'], $g['social_ig'], $g['social_li'], $g['social_yt'] ] );
+        $same = array_filter( [ $g['social_fb'], $g['social_tw'], $g['social_ig'], $g['social_li'], $g['social_yt'], $g['social_tt'] ] );
         if ( $same ) { $s['sameAs'] = array_values( $same ); }
         return $s;
     }
@@ -382,7 +382,7 @@ class GVSEO_Frontend {
         $s   = [
             '@context'            => 'https://schema.org', '@type' => 'Event',
             'name'                => html_entity_decode( get_the_title( $post->ID ) ),
-            'startDate'           => date( 'Y-m-d\TH:i:s', strtotime( $start ) ) . $tzs,
+            'startDate'           => gmdate( 'Y-m-d\TH:i:s', strtotime( $start ) ) . $tzs,
             'eventStatus'         => $status_map[ get_post_meta( $post->ID, '_gvseo_event_status', true ) ?? '' ] ?? 'https://schema.org/EventScheduled',
             'eventAttendanceMode' => $att_map[ get_post_meta( $post->ID, '_gvseo_event_attend', true ) ?? '' ] ?? 'https://schema.org/OfflineEventAttendanceMode',
             'url'                 => get_permalink( $post->ID ),
@@ -390,7 +390,7 @@ class GVSEO_Frontend {
             'organizer'           => [ '@type' => 'Organization', 'name' => $g['org_name'], 'url' => $g['org_url'] ],
         ];
         $end = get_post_meta( $post->ID, '_gvseo_event_end', true );
-        if ( $end ) { $s['endDate'] = date( 'Y-m-d\TH:i:s', strtotime( $end ) ) . $tzs; }
+        if ( $end ) { $s['endDate'] = gmdate( 'Y-m-d\\TH:i:s', strtotime( $end ) ) . $tzs; }
         $venue = get_post_meta( $post->ID, '_gvseo_venue', true );
         if ( $venue ) {
             $s['location'] = [ '@type' => 'Place', 'name' => $venue, 'address' => [

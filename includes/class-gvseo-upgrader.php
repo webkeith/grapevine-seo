@@ -37,6 +37,7 @@ class GVSEO_Upgrader {
         '2.2.0' => 'migrate_2_2_0',
         '2.3.0' => 'migrate_2_3_0',
         '2.4.0' => 'migrate_2_4_0',
+        '2.5.0' => 'migrate_2_5_0',
     ];
 
     /* ═══════════════════════════════════════════════════════════════
@@ -84,7 +85,7 @@ class GVSEO_Upgrader {
                 }
             } catch ( Exception $e ) {
                 $errors[] = "v$version: " . $e->getMessage();
-                error_log( '[Grapevine SEO] Migration error for ' . $version . ': ' . $e->getMessage() );
+                error_log( '[Grapevine SEO] Migration error for ' . $version . ': ' . $e->getMessage() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
             }
         }
 
@@ -174,7 +175,7 @@ class GVSEO_Upgrader {
         global $wpdb;
 
         // Delete all cached SEO scores and results — they'll be recalculated on demand.
-        $deleted = $wpdb->query(
+        $deleted = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
             "DELETE FROM {$wpdb->postmeta}
              WHERE meta_key IN ('_gvseo_seo_score', '_gvseo_seo_results', '_gvseo_seo_ts')"
         );
@@ -222,7 +223,7 @@ class GVSEO_Upgrader {
     private static function migrate_2_4_0() {
         global $wpdb;
         // Clear cached results so new checks appear on next analysis.
-        $wpdb->query(
+        $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
             "DELETE FROM {$wpdb->postmeta} WHERE meta_key = '_gvseo_seo_results'"
         );
         // Set a flag so the sitemap class flushes rewrite rules on the next
@@ -230,6 +231,19 @@ class GVSEO_Upgrader {
         // $wp_rewrite is not yet initialised during plugins_loaded.
         update_option( 'gvseo_flush_rewrite_rules', '1' );
         return 'SEO result cache cleared. Rewrite rules will flush on next page load.';
+    }
+
+    /**
+     * v2.5.0 — TikTok social field + compatibility detection.
+     * Ensures social_tt key exists in existing settings.
+     */
+    private static function migrate_2_5_0() {
+        $settings = get_option( 'gvseo_global_settings', [] );
+        if ( ! array_key_exists( 'social_tt', $settings ) ) {
+            $settings['social_tt'] = '';
+            update_option( 'gvseo_global_settings', $settings );
+        }
+        return 'TikTok social field added.';
     }
 
     /* ═══════════════════════════════════════════════════════════════
@@ -289,7 +303,7 @@ class GVSEO_Upgrader {
         }
 
         // Post meta — all _gvseo_ prefixed keys.
-        $wpdb->query(
+        $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
             "DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE '_gvseo_%'"
         );
     }

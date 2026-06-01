@@ -62,6 +62,7 @@ class GVSEO_Settings {
             // Social
             'social_fb'         => '', 'social_tw' => '',
             'social_ig'         => '', 'social_li' => '', 'social_yt' => '',
+            'social_tt'         => '',  // TikTok
 
             // Features
             'breadcrumbs'       => '1',
@@ -127,7 +128,7 @@ class GVSEO_Settings {
                 'org_street','org_city','org_state','org_postcode','org_country',
                 'org_addr2_name','org_addr2_street','org_addr2_city',
                 'org_addr2_state','org_addr2_postcode','org_addr2_country','org_addr2_phone',
-                'social_fb','social_tw','social_ig','social_li','social_yt',
+                'social_fb','social_tw','social_ig','social_li','social_yt','social_tt',
                 'excluded_post_ids',
             ];
             foreach ( $text_keys as $k ) {
@@ -143,8 +144,8 @@ class GVSEO_Settings {
             // Excluded post types (multi-checkbox)
             $excluded = [];
             if ( isset( $_POST['excluded_types'] ) && is_array( $_POST['excluded_types'] ) ) {
-                foreach ( $_POST['excluded_types'] as $pt ) {
-                    $excluded[] = sanitize_key( $pt );
+                foreach ( array_map( 'sanitize_key', wp_unslash( $_POST['excluded_types'] ) ) as $pt ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+                    $excluded[] = sanitize_key( $pt ); // already sanitized above
                 }
             }
             $s['excluded_types'] = $excluded;
@@ -152,7 +153,7 @@ class GVSEO_Settings {
             // CPT schema defaults
             $cpt_defaults = [];
             if ( isset( $_POST['cpt_defaults'] ) && is_array( $_POST['cpt_defaults'] ) ) {
-                foreach ( $_POST['cpt_defaults'] as $pt => $schema ) {
+                foreach ( wp_unslash( $_POST['cpt_defaults'] ) as $pt => $schema ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
                     $pt_clean     = sanitize_key( $pt );
                     $schema_clean = sanitize_text_field( wp_unslash( $schema ) );
                     if ( $pt_clean && $schema_clean ) {
@@ -267,6 +268,7 @@ class GVSEO_Settings {
                     <div class="gvseo-field-row">
                         <div class="gvseo-field"><label>LinkedIn</label><input type="url" name="social_li" value="<?php echo esc_attr( $s['social_li'] ); ?>"></div>
                         <div class="gvseo-field"><label>YouTube</label><input type="url" name="social_yt" value="<?php echo esc_attr( $s['social_yt'] ); ?>"></div>
+                        <div class="gvseo-field"><label>TikTok</label><input type="url" name="social_tt" value="<?php echo esc_attr( $s['social_tt'] ); ?>"></div>
                     </div>
                 </div>
             </div>
@@ -364,7 +366,7 @@ class GVSEO_Settings {
                     ];
                     foreach ( $toggles as $key => [ $label, $desc ] ) : ?>
                         <div class="gvseo-toggle-row">
-                            <div><strong><?php echo $label; ?></strong><p><?php echo esc_html( $desc ); ?></p></div>
+                            <div><strong><?php echo esc_html( $label ); ?></strong><p><?php echo esc_html( $desc ); ?></p></div>
                             <label class="gvseo-toggle">
                                 <input type="checkbox" name="<?php echo esc_attr( $key ); ?>" value="1" <?php checked( $s[ $key ], '1' ); ?>>
                                 <span></span>
@@ -408,7 +410,7 @@ class GVSEO_Settings {
                                     <a href="<?php echo esc_url( home_url( "/sitemap-{$slug}.xml" ) ); ?>" target="_blank">
                                         sitemap-<?php echo esc_html( $slug ); ?>.xml
                                     </a>
-                                    <em>(<?php echo $count; ?> URLs)</em>
+                                    <em>(<?php echo (int) $count; ?> URLs)</em>
                                 </span>
                             </div>
                         <?php endforeach; ?>

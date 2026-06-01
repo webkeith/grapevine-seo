@@ -134,7 +134,7 @@ class GVSEO_Meta_Box {
                         <div id="gvseo-faq-list">
                             <?php foreach ( $faq_items as $i => $fi ) : ?>
                             <div class="gvseo-repeater-item">
-                                <div class="gvseo-ri-num"><?php echo $i + 1; ?></div>
+                                <div class="gvseo-ri-num"><?php echo (int) ( $i + 1 ); ?></div>
                                 <div class="gvseo-ri-body">
                                     <input type="text" name="_gvseo_faq_q[]" value="<?php echo esc_attr( $fi['q'] ); ?>" placeholder="Question">
                                     <textarea name="_gvseo_faq_a[]" rows="2" placeholder="Answer"><?php echo esc_textarea( $fi['a'] ); ?></textarea>
@@ -152,7 +152,7 @@ class GVSEO_Meta_Box {
                         <div id="gvseo-steps-list">
                             <?php foreach ( $steps as $i => $st ) : ?>
                             <div class="gvseo-repeater-item">
-                                <div class="gvseo-ri-num"><?php echo $i + 1; ?></div>
+                                <div class="gvseo-ri-num"><?php echo (int) ( $i + 1 ); ?></div>
                                 <div class="gvseo-ri-body">
                                     <input type="text" name="_gvseo_step_name[]" value="<?php echo esc_attr( $st['name'] ); ?>" placeholder="Step title">
                                     <textarea name="_gvseo_step_text[]" rows="2" placeholder="Step description"><?php echo esc_textarea( $st['text'] ); ?></textarea>
@@ -264,7 +264,7 @@ class GVSEO_Meta_Box {
                         <strong>SEO Score</strong>
                         <p><?php
                             if ( $seo_ts ) {
-                                printf( 'Analyzed %s ago', human_time_diff( (int) $seo_ts ) );
+                                printf( 'Analyzed %s ago', esc_html( human_time_diff( (int) $seo_ts ) ) );
                             } else {
                                 echo 'Not yet analyzed';
                             }
@@ -370,7 +370,7 @@ how to brew coffee', 'grapevine-seo' ); ?>"><?php echo esc_textarea( $kw_sec ); 
         /* Mode & type */
         $mode = sanitize_key( $_POST['_gvseo_schema_mode'] ?? 'global' );
         update_post_meta( $post_id, '_gvseo_schema_mode', $mode );
-        update_post_meta( $post_id, '_gvseo_schema_type', sanitize_text_field( $_POST['_gvseo_schema_type'] ?? 'Article' ) );
+        update_post_meta( $post_id, '_gvseo_schema_type', sanitize_text_field( wp_unslash( $_POST['_gvseo_schema_type'] ?? 'Article' ) ) );
 
         /* Text fields */
         $texts = [
@@ -412,7 +412,7 @@ how to brew coffee', 'grapevine-seo' ); ?>"><?php echo esc_textarea( $kw_sec ); 
         update_post_meta( $post_id, '_gvseo_steps', wp_slash( wp_json_encode( $steps ) ) );
 
         /* Custom JSON */
-        $cj = wp_unslash( $_POST['_gvseo_custom_json'] ?? '' );
+        $cj = wp_unslash( $_POST['_gvseo_custom_json'] ?? '' ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON validated below
         if ( $cj && null !== json_decode( $cj ) ) {
             update_post_meta( $post_id, '_gvseo_custom_json', wp_slash( trim( $cj ) ) );
         }
