@@ -58,6 +58,8 @@ class GVSEO_SEO_Analyzer {
             'passive_voice'     => [ 'content',  'Passive Voice',             2,  'High passive voice use (>15%) makes content harder to read.',         'Rewrite passive sentences in active voice for clarity.' ],
             'reading_level'     => [ 'content',  'Reading Level',             2,  'Content should target a Flesch score ≥ 60 (easy to read).',           'Simplify vocabulary and sentence structure for better readability.' ],
             'featured_img'      => [ 'content',  'Featured Image',            5,  'Featured images improve CTR and social sharing.',                     'Set a featured image in the post editor.' ],
+            'transition_words'  => [ 'content',  'Transition Words',           3,  'Transition words (however, therefore, furthermore…) improve flow.',  'Add transition words to at least 30% of your sentences.' ],
+            'subheading_dist'   => [ 'content',  'Subheading Distribution',    4,  'No section of text should exceed 300 words without a subheading.',   'Add a subheading to break up long sections of content.' ],
 
             /* ── IMAGE SEO ───────────────────────────────────────────── */
             'img_alt_missing'   => [ 'images',   'Missing Alt Text',          7,  'All images need descriptive alt attributes for accessibility & SEO.', 'Add descriptive alt text to all images on this page.' ],
@@ -105,21 +107,37 @@ class GVSEO_SEO_Analyzer {
         if ( ! $post ) { return []; }
 
         /* ── Raw data ─────────────────────────────────────────────── */
-        $title      = html_entity_decode( get_the_title( $post_id ) );
-        $url        = get_permalink( $post_id );
-        $site_url   = get_bloginfo( 'url' );
-        $slug       = trim( str_replace( rtrim( $site_url, '/' ), '', $url ), '/' );
-        $slug       = strtok( $slug, '?' ); // strip query strings
-        $content    = $post->post_content;
-        $txt        = wp_strip_all_tags( strip_shortcodes( $content ) );
-        $kw         = strtolower( trim( (string) get_post_meta( $post_id, '_gvseo_focus_kw',   true ) ) );
-        $meta_d     = trim( (string) get_post_meta( $post_id, '_gvseo_meta_desc', true ) );
-        $og_t       = (string) get_post_meta( $post_id, '_gvseo_og_title',  true );
-        $og_d       = (string) get_post_meta( $post_id, '_gvseo_og_desc',   true );
-        $og_i       = (string) get_post_meta( $post_id, '_gvseo_og_image',  true );
+        $url      = get_permalink( $post_id );
+        $site_url = get_bloginfo( 'url' );
+        $slug     = trim( str_replace( rtrim( $site_url, '/' ), '', $url ), '/' );
+        $slug     = strtok( $slug, '?' );
+        $content  = $post->post_content;
+        $txt      = wp_strip_all_tags( strip_shortcodes( $content ) );
+
+        /*
+         * Fetch the live rendered <head> of the page.
+         * This detects whatever is actually output — Yoast, Rank Math,
+         * Grapevine, or any other plugin — regardless of where it came from.
+         * Falls back to post data if the HTTP request fails.
+         */
+        $live = self::fetch_page_head( $url, $post_id );
+        $title   = $live['title']    ?: html_entity_decode( get_the_title( $post_id ) );
+        $meta_d  = $live['meta_desc']?: '';
+        $og_t    = $live['og_title'] ?: '';
+        $og_d    = $live['og_desc']  ?: '';
+        $og_i    = $live['og_image'] ?: '';
+        $noindex = $live['noindex'];
+        $canonical = $live['canonical'] ?: $url;
+
+        // Focus keyword always comes from Grapevine's own field (it's what the
+        // user tells us to target — not something another plugin sets).
+        $kw      = strtolower( trim( (string) get_post_meta( $post_id, '_gvseo_focus_kw', true ) ) );
+
         $s_mode     = get_post_meta( $post_id, '_gvseo_schema_mode', true );
         $s_type     = get_post_meta( $post_id, '_gvseo_schema_type', true );
-        $noindex    = get_post_meta( $post_id, '_gvseo_noindex', true );
+        // Secondary keywords (one per line — always from our own field).
+        $sec_kw_raw = get_post_meta( $post_id, '_gvseo_focus_kw_secondary', true );
+        $sec_kws    = array_filter( array_map( 'trim', explode( "\n", strtolower( (string) $sec_kw_raw ) ) ) );
         $post_type  = $post->post_type;
         $modified   = strtotime( $post->post_modified );
         $has_thumb  = has_post_thumbnail( $post_id );
@@ -385,6 +403,26 @@ class GVSEO_SEO_Analyzer {
             ! $has_thumb ? $checks['featured_img'][4] : ''
         );
 
+        /* ── Transition words ────────────────────────────────────── */
+        $tw_pct = self::transition_word_pct( $txt );
+        $results['transition_words'] = self::r(
+            $tw_pct >= 30 ? 'pass' : ( $tw_pct >= 20 ? 'warn' : 'fail' ),
+            $checks['transition_words'],
+            "{$tw_pct}% of sentences use transition words (aim for 30%+).",
+            $tw_pct < 30 ? $checks['transition_words'][4] : ''
+        );
+
+        /* ── Subheading distribution ─────────────────────────────── */
+        $max_words_between = self::max_words_between_headings( $content );
+        $results['subheading_dist'] = self::r(
+            $max_words_between <= 300 ? 'pass' : ( $max_words_between <= 400 ? 'warn' : 'fail' ),
+            $checks['subheading_dist'],
+            $max_words_between === 0
+                ? 'No long sections detected.'
+                : "Longest section without a subheading: ~{$max_words_between} words.",
+            $max_words_between > 300 ? $checks['subheading_dist'][4] : ''
+        );
+
         /* ── IMAGE SEO ───────────────────────────────────────────── */
         $results['img_alt_missing'] = self::r(
             $total_imgs === 0 ? 'warn' : ( $missing_alts === 0 ? 'pass' : ( $missing_alts <= 1 ? 'warn' : 'fail' ) ),
@@ -461,9 +499,10 @@ class GVSEO_SEO_Analyzer {
         );
         // WordPress outputs canonical by default; we note it as pass unless noindex is on.
         $results['canonical'] = self::r(
-            'pass', $checks['canonical'],
-            'WordPress outputs a canonical tag automatically.',
-            ''
+            $canonical ? 'pass' : 'warn',
+            $checks['canonical'],
+            $canonical ? 'Canonical tag found: ' . esc_url( $canonical ) : 'No canonical tag detected on this page.',
+            ! $canonical ? $checks['canonical'][4] : ''
         );
         $results['noindex_check'] = self::r(
             $noindex ? 'fail' : 'pass', $checks['noindex_check'],
@@ -558,6 +597,29 @@ class GVSEO_SEO_Analyzer {
             }
         }
 
+        /* ── Secondary keyword coverage ─────────────────────────────── */
+        if ( ! empty( $sec_kws ) ) {
+            $found_sec     = [];
+            $missing_sec   = [];
+            $txt_lower_sec = strtolower( $txt );
+            foreach ( $sec_kws as $skw ) {
+                if ( substr_count( $txt_lower_sec, $skw ) > 0 ) {
+                    $found_sec[] = $skw;
+                } else {
+                    $missing_sec[] = $skw;
+                }
+            }
+            $sec_total = count( $sec_kws );
+            $sec_found = count( $found_sec );
+            $results['sec_kw_coverage'] = self::r(
+                $sec_found === $sec_total ? 'pass' : ( $sec_found > 0 ? 'warn' : 'fail' ),
+                $checks['sec_kw_coverage'],
+                "$sec_found of $sec_total secondary keyword" . ( $sec_total !== 1 ? 's' : '' ) . " found in content."
+                    . ( ! empty( $missing_sec ) ? ' Missing: ' . implode( ', ', array_map( fn($k) => '"' . $k . '"', $missing_sec ) ) . '.' : '' ),
+                ! empty( $missing_sec ) ? $checks['sec_kw_coverage'][4] : ''
+            );
+        }
+
         /* ── Remove null entries (skipped conditional checks) ─────── */
         $results = array_filter( $results );
 
@@ -594,8 +656,13 @@ class GVSEO_SEO_Analyzer {
        ANALYZE ALL
        ═══════════════════════════════════════════════════════════════ */
     public static function analyze_all() {
+        // Exclude builder templates and user-configured excluded types.
+        $all_public   = array_values( get_post_types( [ 'public' => true ], 'names' ) );
+        $excluded     = GVSEO_Settings::get_excluded_types();
+        $include_types = array_values( array_diff( $all_public, $excluded ) );
+
         $ids = get_posts( [
-            'post_type'      => array_values( get_post_types( [ 'public' => true ], 'names' ) ),
+            'post_type'      => $include_types ?: [ 'post', 'page' ],
             'post_status'    => 'publish',
             'posts_per_page' => -1,
             'fields'         => 'ids',
@@ -635,10 +702,15 @@ class GVSEO_SEO_Analyzer {
     }
 
     public static function all_posts() {
-        $types = get_post_types( [ 'public' => true ], 'objects' );
-        $rows  = [];
+        $types    = get_post_types( [ 'public' => true ], 'objects' );
+        $excluded = GVSEO_Settings::get_excluded_types();
+        $rows     = [];
         foreach ( $types as $pt ) {
+            // Skip excluded post types (Elementor templates, builder layouts, etc.)
+            if ( in_array( $pt->name, $excluded, true ) ) { continue; }
             foreach ( get_posts( [ 'post_type' => $pt->name, 'post_status' => 'publish', 'posts_per_page' => -1 ] ) as $p ) {
+                // Skip individually excluded post IDs.
+                if ( GVSEO_Settings::is_post_excluded( $p->ID ) ) { continue; }
                 $score   = get_post_meta( $p->ID, '_gvseo_seo_score', true );
                 $ts      = (int) get_post_meta( $p->ID, '_gvseo_seo_ts', true );
                 $rows[]  = [
@@ -796,11 +868,220 @@ class GVSEO_SEO_Analyzer {
     }
 
     /* ═══════════════════════════════════════════════════════════════
+       LIVE PAGE HEAD FETCHER
+       Fetches the actual rendered HTML of the page and extracts
+       meta tags — so analysis reflects what Google actually sees,
+       regardless of which SEO plugin set them.
+       ═══════════════════════════════════════════════════════════════ */
+
+    /**
+     * Fetch and parse the live <head> of a page.
+     * Results are cached in a transient for 30 minutes.
+     *
+     * @param  string $url     Full URL of the page.
+     * @param  int    $post_id Post ID (used for cache key and fallback).
+     * @return array {
+     *     title, meta_desc, og_title, og_desc, og_image,
+     *     noindex (bool), canonical
+     * }
+     */
+    public static function fetch_page_head( $url, $post_id ) {
+        $cache_key = 'gvseo_head_' . $post_id;
+        $cached    = get_transient( $cache_key );
+        if ( $cached !== false ) {
+            return $cached;
+        }
+
+        $empty = [
+            'title' => '', 'meta_desc' => '', 'og_title' => '',
+            'og_desc' => '', 'og_image' => '', 'noindex' => false, 'canonical' => '',
+        ];
+
+        $response = wp_remote_get( $url, [
+            'timeout'    => 20,
+            'user-agent' => 'GrapevineSEO/2.4 (page-analyzer)',
+            'sslverify'  => apply_filters( 'gvseo_analyzer_sslverify', true ),
+            'cookies'    => [],
+        ] );
+
+        if ( is_wp_error( $response ) ) {
+            // HTTP failed — log silently and return empty (checks will show warnings).
+            error_log( '[Grapevine SEO] Page fetch failed for ' . $url . ': ' . $response->get_error_message() );
+            return $empty;
+        }
+
+        $code = wp_remote_retrieve_response_code( $response );
+        if ( $code !== 200 ) {
+            return $empty;
+        }
+
+        $html = wp_remote_retrieve_body( $response );
+        // Only parse the <head> section — faster and we don't need the body here.
+        if ( preg_match( '/<head[^>]*>(.*?)<\/head>/is', $html, $hm ) ) {
+            $head_html = $hm[1];
+        } else {
+            $head_html = $html;
+        }
+
+        $data = self::parse_head_html( $head_html );
+
+        // Cache for 30 minutes — cleared on post save via clear_page_cache().
+        set_transient( $cache_key, $data, 30 * MINUTE_IN_SECONDS );
+
+        return $data;
+    }
+
+    /**
+     * Parse meta tags from a <head> HTML string.
+     * Handles both attribute orderings: name/property before content, and vice versa.
+     *
+     * @param  string $html
+     * @return array
+     */
+    private static function parse_head_html( $html ) {
+        /* ── Title ── */
+        $title = '';
+        if ( preg_match( '/<title[^>]*>(.*?)<\/title>/is', $html, $m ) ) {
+            $title = html_entity_decode( trim( wp_strip_all_tags( $m[1] ) ), ENT_QUOTES, 'UTF-8' );
+        }
+
+        /* ── Meta description ── */
+        $meta_desc = self::extract_meta_content( $html, 'name', 'description' );
+
+        /* ── Open Graph ── */
+        $og_title = self::extract_meta_content( $html, 'property', 'og:title' );
+        $og_desc  = self::extract_meta_content( $html, 'property', 'og:description' );
+        $og_image = self::extract_meta_content( $html, 'property', 'og:image' );
+
+        /* ── Robots / noindex ── */
+        $robots  = self::extract_meta_content( $html, 'name', 'robots' );
+        $noindex = ( strpos( strtolower( $robots ), 'noindex' ) !== false );
+
+        /* ── Canonical ── */
+        $canonical = '';
+        if ( preg_match( '/<link[^>]+rel=["\']canonical["\'][^>]+href=["\']([^"\']+)["\'][^>]*>/i', $html, $cm ) ) {
+            $canonical = $cm[1];
+        } elseif ( preg_match( '/<link[^>]+href=["\']([^"\']+)["\'][^>]+rel=["\']canonical["\'][^>]*>/i', $html, $cm ) ) {
+            $canonical = $cm[1];
+        }
+
+        return compact( 'title', 'meta_desc', 'og_title', 'og_desc', 'og_image', 'noindex', 'canonical' );
+    }
+
+    /**
+     * Extract the content attribute of a meta tag by name or property.
+     * Handles both attribute orderings (name before content, content before name).
+     *
+     * @param  string $html
+     * @param  string $attr  'name' or 'property'
+     * @param  string $value The name/property value to find.
+     * @return string
+     */
+    private static function extract_meta_content( $html, $attr, $value ) {
+        // Pattern A: <meta name="X" content="Y"> (attr before content)
+        $pa = '/<meta[^>]+' . $attr . '=["\'' . preg_quote( $value, '/' ) . '["\']\s+content=["\']([^"\']*)["\'][^>]*>/i';
+        if ( preg_match( $pa, $html, $m ) ) {
+            return html_entity_decode( $m[1], ENT_QUOTES, 'UTF-8' );
+        }
+        // Pattern B: <meta content="Y" name="X"> (content before attr)
+        $pb = '/<meta[^>]+content=["\']([^"\']*)["\'][^>]+' . $attr . '=["\'' . preg_quote( $value, '/' ) . '["\']\s*[^>]*>/i';
+        if ( preg_match( $pb, $html, $m ) ) {
+            return html_entity_decode( $m[1], ENT_QUOTES, 'UTF-8' );
+        }
+        return '';
+    }
+
+    /**
+     * Clear the cached page head for a post.
+     * Called on post save so the next analysis fetches fresh data.
+     *
+     * @param int $post_id
+     */
+    public static function clear_page_cache( $post_id ) {
+        delete_transient( 'gvseo_head_' . $post_id );
+    }
+
+    /* ── Transition words list ──────────────────────────────────────── */
+    private static function transition_words() {
+        return [
+            // Addition
+            'additionally','also','furthermore','moreover','besides','in addition',
+            'as well','not only','but also','what is more','coupled with',
+            // Contrast
+            'however','although','though','even though','despite','in contrast',
+            'on the other hand','on the contrary','nevertheless','nonetheless',
+            'yet','still','while','whereas','but','conversely','unlike',
+            'rather','alternatively',
+            // Cause & effect
+            'therefore','thus','consequently','as a result','for this reason',
+            'hence','so','because','since','due to','owing to','accordingly',
+            // Sequence
+            'first','second','third','finally','next','then','lastly',
+            'to begin with','in the first place','subsequently','afterward',
+            'previously','initially','eventually','meanwhile','at this point',
+            // Illustration
+            'for example','for instance','such as','in particular','specifically',
+            'to illustrate','namely','including',
+            // Emphasis
+            'indeed','certainly','undoubtedly','without doubt','of course',
+            'clearly','obviously','importantly','above all','in fact',
+            // Summary
+            'in conclusion','in summary','to summarise','to summarize','overall',
+            'in short','in brief','to sum up','all in all','as shown',
+            // Comparison
+            'similarly','likewise','in the same way','in comparison','compared to',
+            'by the same token',
+        ];
+    }
+
+    /**
+     * Calculate the percentage of sentences containing a transition word.
+     * Target: ≥30% (Yoast standard).
+     */
+    private static function transition_word_pct( $text ) {
+        $sentences = preg_split( '/[.!?]+/', $text, -1, PREG_SPLIT_NO_EMPTY );
+        if ( empty( $sentences ) ) { return 0; }
+        $words   = self::transition_words();
+        $count   = 0;
+        foreach ( $sentences as $s ) {
+            $s_lower = strtolower( trim( $s ) );
+            foreach ( $words as $tw ) {
+                if ( strpos( $s_lower, $tw ) !== false ) {
+                    $count++;
+                    break;
+                }
+            }
+        }
+        return (int) round( $count / count( $sentences ) * 100 );
+    }
+
+    /**
+     * Find the maximum number of words between any two headings.
+     * Used to detect sections that are too long without a subheading.
+     */
+    private static function max_words_between_headings( $html ) {
+        // Split content by heading tags.
+        $parts = preg_split( '/<h[1-6][^>]*>.*?<\/h[1-6]>/is', $html );
+        if ( count( $parts ) <= 1 ) {
+            // No headings — count all words.
+            return self::word_count( wp_strip_all_tags( $html ) );
+        }
+        $max = 0;
+        foreach ( $parts as $part ) {
+            $words = self::word_count( wp_strip_all_tags( $part ) );
+            if ( $words > $max ) { $max = $words; }
+        }
+        return $max;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
        AJAX
        ═══════════════════════════════════════════════════════════════ */
     public static function init() {
         add_action( 'wp_ajax_gvseo_analyze_all',  [ __CLASS__, 'ajax_all' ] );
         add_action( 'wp_ajax_gvseo_analyze_post', [ __CLASS__, 'ajax_post' ] );
+        // Clear live-page cache whenever a post is saved or updated.
+        add_action( 'save_post', [ __CLASS__, 'clear_page_cache' ] );
     }
 
     public static function ajax_all() {

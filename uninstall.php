@@ -38,5 +38,10 @@ $wpdb->query(
     "DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE '_gvseo_%'"
 );
 
-// 3. Clear any scheduled cron jobs (none currently, but future-proofed).
+// 3. Clear all cached page head transients (gvseo_head_{post_id}).
+$wpdb->query(
+    "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_gvseo_head_%' OR option_name LIKE '_transient_timeout_gvseo_head_%'"
+);
+
+// 4. Clear any scheduled cron jobs (none currently, but future-proofed).
 wp_clear_scheduled_hook( 'gvseo_scheduled_analysis' );

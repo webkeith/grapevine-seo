@@ -36,8 +36,14 @@ class GVSEO_Frontend {
 
         // 4. Per-page schema (any singular post type, including CPTs and WC products).
         if ( is_singular() ) {
-            $ps = self::page_schema( get_the_ID() );
-            if ( $ps ) { $schemas[] = $ps; }
+            $post_id   = get_the_ID();
+            $post_type = get_post_type( $post_id );
+            $excluded  = GVSEO_Settings::get_excluded_types();
+            // Skip schema entirely for excluded post types or manually excluded post IDs.
+            if ( ! in_array( $post_type, $excluded, true ) && ! GVSEO_Settings::is_post_excluded( $post_id ) ) {
+                $ps = self::page_schema( $post_id );
+                if ( $ps ) { $schemas[] = $ps; }
+            }
         }
 
         // 5. Meta/OG tags.

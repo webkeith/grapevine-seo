@@ -35,6 +35,8 @@ class GVSEO_Upgrader {
         '2.0.0' => 'migrate_2_0_0',
         '2.1.0' => 'migrate_2_1_0',
         '2.2.0' => 'migrate_2_2_0',
+        '2.3.0' => 'migrate_2_3_0',
+        '2.4.0' => 'migrate_2_4_0',
     ];
 
     /* ═══════════════════════════════════════════════════════════════
@@ -184,6 +186,50 @@ class GVSEO_Upgrader {
         ], false );
 
         return "Cleared $deleted cached SEO score rows — re-analysis required.";
+    }
+
+    /**
+     * v2.3.0 — Address, phone, and exclusions added to org settings.
+     * Ensures new keys exist on existing installs.
+     */
+    private static function migrate_2_3_0() {
+        $settings = get_option( 'gvseo_global_settings', [] );
+        $changed  = false;
+        $new_keys = [
+            'org_phone' => '', 'org_street' => '', 'org_city' => '',
+            'org_state' => '', 'org_postcode' => '', 'org_country' => '',
+            'org_addr2_enabled' => '0', 'org_addr2_name' => '',
+            'org_addr2_street' => '', 'org_addr2_city' => '',
+            'org_addr2_state' => '', 'org_addr2_postcode' => '',
+            'org_addr2_country' => '', 'org_addr2_phone' => '',
+            'excluded_types' => [], 'excluded_post_ids' => '',
+        ];
+        foreach ( $new_keys as $key => $default ) {
+            if ( ! array_key_exists( $key, $settings ) ) {
+                $settings[ $key ] = $default;
+                $changed = true;
+            }
+        }
+        if ( $changed ) { update_option( 'gvseo_global_settings', $settings ); }
+        return 'Address, phone, and exclusion fields added to organization settings.';
+    }
+
+    /**
+     * v2.4.0 — Sitemap, transition words, subheading distribution, secondary keywords.
+     * Clears cached SEO results so new checks appear on next analysis.
+     * Flushes rewrite rules so sitemap URLs resolve.
+     */
+    private static function migrate_2_4_0() {
+        global $wpdb;
+        // Clear cached results so new checks appear on next analysis.
+        $wpdb->query(
+            "DELETE FROM {$wpdb->postmeta} WHERE meta_key = '_gvseo_seo_results'"
+        );
+        // Set a flag so the sitemap class flushes rewrite rules on the next
+        // 'init' action — we cannot call add_rewrite_rule() here because
+        // $wp_rewrite is not yet initialised during plugins_loaded.
+        update_option( 'gvseo_flush_rewrite_rules', '1' );
+        return 'SEO result cache cleared. Rewrite rules will flush on next page load.';
     }
 
     /* ═══════════════════════════════════════════════════════════════

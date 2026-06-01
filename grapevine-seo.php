@@ -3,7 +3,7 @@
  * Plugin Name:  Grapevine SEO
  * Plugin URI:   https://github.com/webkeith/grapevine-seo
  * Description:  JSON-LD Schema markup + full SEO analysis engine with per-page scoring, site-wide reports, and rich results compliance.
- * Version:      2.0.0
+ * Version:      2.4.0
  * Author:       Keith Quinones
  * Author URI:   https://github.com/webkeith
  * License:      GPL v2 or later
@@ -35,7 +35,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /* ── Plugin constants ─────────────────────────────────── */
-define( 'GVSEO_VERSION',     '2.0.0' );
+define( 'GVSEO_VERSION',     '2.4.0' );
 define( 'GVSEO_DIR',         plugin_dir_path( __FILE__ ) );
 define( 'GVSEO_URL',         plugin_dir_url( __FILE__ ) );
 define( 'GVSEO_BASE',        plugin_basename( __FILE__ ) );
@@ -96,6 +96,7 @@ final class Grapevine_SEO {
         require_once GVSEO_DIR . 'includes/class-gvseo-seo-analyzer.php';
         require_once GVSEO_DIR . 'includes/class-gvseo-seo-page.php';
         require_once GVSEO_DIR . 'includes/class-gvseo-woo-bridge.php';
+        require_once GVSEO_DIR . 'includes/class-gvseo-sitemap.php';
         require_once GVSEO_DIR . 'includes/class-gvseo-upgrader.php';
         require_once GVSEO_DIR . 'includes/class-gvseo-version-page.php';
     }
@@ -177,11 +178,20 @@ register_activation_hook( __FILE__, function () {
         ] );
     }
     update_option( 'gvseo_version', GVSEO_VERSION );
-    flush_rewrite_rules();
+    // Sitemap rewrite rules need to be registered before flushing.
+    if ( class_exists( 'GVSEO_Sitemap' ) ) {
+        GVSEO_Sitemap::activate();
+    } else {
+        flush_rewrite_rules();
+    }
 } );
 
 register_deactivation_hook( __FILE__, function () {
-    flush_rewrite_rules();
+    if ( class_exists( 'GVSEO_Sitemap' ) ) {
+        GVSEO_Sitemap::deactivate();
+    } else {
+        flush_rewrite_rules();
+    }
 } );
 
 /* ── Boot ──────────────────────────────────────────── */

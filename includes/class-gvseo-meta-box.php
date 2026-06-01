@@ -29,7 +29,8 @@ class GVSEO_Meta_Box {
         $type    = get_post_meta( $post->ID, '_gvseo_schema_type', true ) ?: 'Article';
 
         /* SEO fields */
-        $kw        = get_post_meta( $post->ID, '_gvseo_focus_kw',  true );
+        $kw        = get_post_meta( $post->ID, '_gvseo_focus_kw',          true );
+        $kw_sec    = get_post_meta( $post->ID, '_gvseo_focus_kw_secondary', true );
         $meta_desc = get_post_meta( $post->ID, '_gvseo_meta_desc', true );
         $og_title  = get_post_meta( $post->ID, '_gvseo_og_title',  true );
         $og_desc   = get_post_meta( $post->ID, '_gvseo_og_desc',   true );
@@ -301,7 +302,17 @@ class GVSEO_Meta_Box {
                 <div class="gvseo-mb-field">
                     <label>Focus Keyword</label>
                     <input type="text" name="_gvseo_focus_kw" value="<?php echo esc_attr( $kw ); ?>" placeholder="e.g. best coffee recipes">
-                    <p class="gvseo-mb-hint">Primary keyword this page targets — used in all SEO checks.</p>
+                </div>
+
+                <!-- Secondary keywords -->
+                <div class="gvseo-mb-field">
+                    <label>Secondary Keywords <span class="gvseo-mb-badge-optional">Optional</span></label>
+                    <textarea name="_gvseo_focus_kw_secondary" rows="3"
+                        placeholder="<?php esc_attr_e( 'One keyword per line, e.g.:
+coffee brewing guide
+best coffee methods
+how to brew coffee', 'grapevine-seo' ); ?>"><?php echo esc_textarea( $kw_sec ); ?></textarea>
+                    <p class="gvseo-mb-hint">Additional keywords to track. Each will be checked for presence in content. One per line.</p>
                 </div>
 
                 <!-- Meta description -->
@@ -375,7 +386,8 @@ class GVSEO_Meta_Box {
         }
 
         /* Textareas */
-        update_post_meta( $post_id, '_gvseo_meta_desc',   sanitize_textarea_field( wp_unslash( $_POST['_gvseo_meta_desc'] ?? '' ) ) );
+        update_post_meta( $post_id, '_gvseo_meta_desc',          sanitize_textarea_field( wp_unslash( $_POST['_gvseo_meta_desc'] ?? '' ) ) );
+        update_post_meta( $post_id, '_gvseo_focus_kw_secondary', sanitize_textarea_field( wp_unslash( $_POST['_gvseo_focus_kw_secondary'] ?? '' ) ) );
         update_post_meta( $post_id, '_gvseo_ingredients',  sanitize_textarea_field( wp_unslash( $_POST['_gvseo_ingredients'] ?? '' ) ) );
 
         /* Checkbox */

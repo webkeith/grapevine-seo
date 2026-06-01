@@ -1,5 +1,5 @@
 === Grapevine SEO ===
-Contributors: Keith Quinones
+Contributors: yourname
 Tags: schema, json-ld, seo, structured data, rich results
 Requires at least: 5.8
 Tested up to: 6.5
@@ -7,7 +7,7 @@ Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-JSON-LD Schema markup + full SEO analysis engine.
+JSON-LD Schema markup + full SEO analysis engine with per-page scoring and site-wide reports.
 
 == Description ==
 Grapevine SEO gives you two powerful tools in one plugin:
