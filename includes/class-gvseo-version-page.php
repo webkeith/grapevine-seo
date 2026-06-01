@@ -89,10 +89,10 @@ class GVSEO_Version_Page {
                 'version' => '2.0.0',
                 'date'    => '2025-05-24',
                 'type'    => 'major',
-                'summary' => 'Renamed to Grapevine SEO — Full rewrite',
+                'summary' => 'Initial Release — Grapevine SEO',
                 'changes' => [
                     'added'   => [
-                        'Plugin renamed Schema King → Grapevine SEO',
+                        'Initial release of Grapevine SEO',
                         'SEO Analysis Engine with 22 checks across 5 categories',
                         'Site-wide SEO score gauge chart (Chart.js doughnut)',
                         'Score distribution donut chart',
@@ -105,14 +105,10 @@ class GVSEO_Version_Page {
                         'Mini check results in post editor SEO tab',
                         'GitHub Update Checker integration (Plugin Update Checker v5.3)',
                         'GitHub Actions release workflow (.github/workflows/release.yml)',
-                        'GITHUB_SETUP.md setup guide',
-                        'Light theme admin CSS',
+                        'Light theme admin UI',
                         'Google Rich Results compliant schema: Article, FAQPage, HowTo, Product, Event, Recipe, LocalBusiness',
                     ],
                     'changed' => [
-                        'Class prefix changed from Schema_King_ to GVSEO_',
-                        'Meta key prefix changed from _schema_king_ to _gvseo_',
-                        'Option prefix changed from schema_king_ to gvseo_',
                         'Admin menu slug: grapevine-seo',
                     ],
                     'fixed'   => [

@@ -1,11 +1,6 @@
 === Grapevine SEO ===
-<<<<<<< HEAD
 Contributors: keithquinones
 Tags: schema, seo, structured data, rich results, json-ld
-=======
-Contributors: Keith QUinones
-Tags: schema, json-ld, seo, structured data, rich results
->>>>>>> 788ab2a3c2f33306697c55a11186759383d7966c
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
@@ -125,8 +120,7 @@ Yes. The WooCommerce bridge pulls live price, SKU, stock status, ratings, and pr
 * CPT-aware breadcrumbs
 
 = 2.0.0 =
-* Initial release — renamed from Rank AI Schema to Grapevine SEO
-* Full prefix rename: RAS_ → GVSEO_, _ras_ → _gvseo_
+* Initial release of Grapevine SEO
 * GitHub Update Checker integration (Plugin Update Checker v5.3)
 * SEO Analysis Engine with 22 initial checks
 * Light theme admin interface

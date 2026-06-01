@@ -38,6 +38,8 @@ class GVSEO_Upgrader {
         '2.3.0' => 'migrate_2_3_0',
         '2.4.0' => 'migrate_2_4_0',
         '2.5.0' => 'migrate_2_5_0',
+        '2.6.0' => 'migrate_2_6_0',
+        '2.7.0' => 'migrate_2_7_0',
     ];
 
     /* ═══════════════════════════════════════════════════════════════
@@ -244,6 +246,72 @@ class GVSEO_Upgrader {
             update_option( 'gvseo_global_settings', $settings );
         }
         return 'TikTok social field added.';
+    }
+
+    /**
+     * v2.6.0 — LocalBusiness schema (separate entity from Organization).
+     * Adds all lb_* keys to existing installs.
+     */
+    private static function migrate_2_6_0() {
+        $settings = get_option( 'gvseo_global_settings', [] );
+        $changed  = false;
+
+        // Migrate old flat lb_* fields into lb_locations[0] if they existed.
+        $old_fields = [ 'lb_enabled', 'lb_type', 'lb_name', 'lb_street', 'lb_city' ];
+        $has_old    = false;
+        foreach ( $old_fields as $f ) {
+            if ( array_key_exists( $f, $settings ) ) { $has_old = true; break; }
+        }
+
+        if ( $has_old && empty( $settings['lb_locations'] ) ) {
+            $settings['lb_locations'] = [ [
+                'enabled'     => $settings['lb_enabled']    ?? '0',
+                'type'        => $settings['lb_type']        ?? 'LocalBusiness',
+                'name'        => $settings['lb_name']        ?? '',
+                'description' => $settings['lb_description'] ?? '',
+                'phone'       => $settings['lb_phone']       ?? '',
+                'email'       => $settings['lb_email']       ?? '',
+                'street'      => $settings['lb_street']      ?? '',
+                'city'        => $settings['lb_city']        ?? '',
+                'state'       => $settings['lb_state']       ?? '',
+                'postcode'    => $settings['lb_postcode']    ?? '',
+                'country'     => $settings['lb_country']     ?? '',
+                'lat'         => $settings['lb_lat']         ?? '',
+                'lng'         => $settings['lb_lng']         ?? '',
+                'maps_url'    => $settings['lb_maps_url']    ?? '',
+                'price_range' => $settings['lb_price_range'] ?? '',
+                'payment'     => $settings['lb_payment']     ?? '',
+                'currencies'  => $settings['lb_currencies']  ?? 'AUD',
+                'area_served' => $settings['lb_area_served'] ?? '',
+                'hours'       => $settings['lb_hours']       ?? [],
+                'same_as_org' => $settings['lb_same_as_org'] ?? '1',
+            ] ];
+            // Remove old flat keys
+            foreach ( array_keys( $settings ) as $k ) {
+                if ( strpos( $k, 'lb_' ) === 0 && $k !== 'lb_locations' ) {
+                    unset( $settings[ $k ] );
+                }
+            }
+            $changed = true;
+        } elseif ( ! array_key_exists( 'lb_locations', $settings ) ) {
+            $settings['lb_locations'] = [];
+            $changed = true;
+        }
+
+        if ( $changed ) { update_option( 'gvseo_global_settings', $settings ); }
+        return 'LocalBusiness locations schema migrated to multi-location structure.';
+    }
+
+    /**
+     * v2.7.0 — Organization founder field + department built from lb_locations.
+     */
+    private static function migrate_2_7_0() {
+        $settings = get_option( 'gvseo_global_settings', [] );
+        if ( ! array_key_exists( 'org_founder', $settings ) ) {
+            $settings['org_founder'] = '';
+            update_option( 'gvseo_global_settings', $settings );
+        }
+        return 'Organization founder field added.';
     }
 
     /* ═══════════════════════════════════════════════════════════════

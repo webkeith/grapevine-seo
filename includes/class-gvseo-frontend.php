@@ -23,18 +23,26 @@ class GVSEO_Frontend {
             $schemas[] = self::organization( $g );
         }
 
-        // 2. WebSite + Sitelinks Searchbox (homepage only).
+        // 2. LocalBusiness — one schema per location/branch (all pages).
+        $lb_locations = $g['lb_locations'] ?? [];
+        foreach ( $lb_locations as $li => $loc ) {
+            if ( ( $loc['enabled'] ?? '1' ) !== '1' ) { continue; }
+            $lb = self::output_local_business( $loc, $li, $g );
+            if ( $lb ) { $schemas[] = $lb; }
+        }
+
+        // 3. WebSite + Sitelinks Searchbox (homepage only).
         if ( is_front_page() && '1' === $g['sitelinks'] ) {
             $schemas[] = self::website( $g );
         }
 
-        // 3. BreadcrumbList (non-home).
+        // 4. BreadcrumbList (non-home).
         if ( ! is_front_page() && '1' === $g['breadcrumbs'] ) {
             $bc = self::breadcrumbs();
             if ( $bc ) { $schemas[] = $bc; }
         }
 
-        // 4. Per-page schema (any singular post type, including CPTs and WC products).
+        // 5. Per-page schema (any singular post type, including CPTs and WC products).
         if ( is_singular() ) {
             $post_id   = get_the_ID();
             $post_type = get_post_type( $post_id );
@@ -46,7 +54,7 @@ class GVSEO_Frontend {
             }
         }
 
-        // 5. Meta/OG tags.
+        // 6. Meta/OG tags.
         self::meta_tags();
 
         foreach ( $schemas as $s ) {
@@ -178,21 +186,89 @@ class GVSEO_Frontend {
     private static function organization( $g ) {
         $url = trailingslashit( $g['org_url'] );
         $s = [
-            '@context' => 'https://schema.org', '@type' => 'Organization',
-            '@id' => $url . '#organization', 'name' => $g['org_name'], 'url' => $g['org_url'],
+            '@context' => 'https://schema.org',
+            '@type'    => 'Organization',
+            '@id'      => $url . '#organization',
+            'name'     => $g['org_name'],
+            'url'      => $g['org_url'],
         ];
+
+        /* ── Logo ─────────────────────────────────── */
         if ( $g['org_logo'] ) {
             $dim  = self::image_dims( $g['org_logo'] );
             $logo = [ '@type' => 'ImageObject', 'url' => $g['org_logo'] ];
             if ( $dim ) { $logo['width'] = $dim[0]; $logo['height'] = $dim[1]; }
             $s['logo'] = $logo;
         }
-        if ( $g['org_email'] ) {
+
+        /* ── Contact ──────────────────────────────── */
+        if ( ! empty( $g['org_email'] ) ) {
             $s['email'] = $g['org_email'];
-            $s['contactPoint'] = [ '@type' => 'ContactPoint', 'email' => $g['org_email'], 'contactType' => 'customer service' ];
         }
-        $same = array_filter( [ $g['social_fb'], $g['social_tw'], $g['social_ig'], $g['social_li'], $g['social_yt'], $g['social_tt'] ] );
+        if ( ! empty( $g['org_phone'] ) ) {
+            $s['telephone'] = $g['org_phone'];
+        }
+        if ( ! empty( $g['org_email'] ) || ! empty( $g['org_phone'] ) ) {
+            $cp = [ '@type' => 'ContactPoint', 'contactType' => 'customer service' ];
+            if ( ! empty( $g['org_email'] ) ) { $cp['email']     = $g['org_email']; }
+            if ( ! empty( $g['org_phone'] ) ) { $cp['telephone'] = $g['org_phone']; }
+            $s['contactPoint'] = $cp;
+        }
+
+        /* ── Address (primary) ────────────────────── */
+        if ( ! empty( $g['org_street'] ) || ! empty( $g['org_city'] ) ) {
+            $addr = [ '@type' => 'PostalAddress' ];
+            if ( ! empty( $g['org_street'] ) )   { $addr['streetAddress']   = $g['org_street']; }
+            if ( ! empty( $g['org_city'] ) )      { $addr['addressLocality']  = $g['org_city']; }
+            if ( ! empty( $g['org_state'] ) )     { $addr['addressRegion']    = $g['org_state']; }
+            if ( ! empty( $g['org_postcode'] ) )  { $addr['postalCode']       = $g['org_postcode']; }
+            if ( ! empty( $g['org_country'] ) )   { $addr['addressCountry']   = strtoupper( $g['org_country'] ); }
+            $s['address'] = $addr;
+        }
+
+        /* ── Founder ──────────────────────────────── */
+        if ( ! empty( $g['org_founder'] ) ) {
+            $s['founder'] = [
+                '@type' => 'Person',
+                'name'  => $g['org_founder'],
+            ];
+        }
+
+        /* ── Department — lightweight @id references only ─────────
+         *
+         * Full LocalBusiness details live in the standalone JSON-LD blocks
+         * output separately. Here we use @id references so Google merges
+         * the department relationship with the full entity data via JSON-LD
+         * entity linking. This avoids duplication and is schema.org-compliant.
+         *
+         * Produces:
+         *   "department": [
+         *     { "@type": "LocalBusiness", "@id": "...#localbusiness" },
+         *     { "@type": "LocalBusiness", "@id": "...#localbusiness-1" }
+         *   ]
+         * ─────────────────────────────────────────────────────────── */
+        $lb_locations = $g['lb_locations'] ?? [];
+        $departments  = [];
+        foreach ( $lb_locations as $li => $loc ) {
+            if ( ( $loc['enabled'] ?? '1' ) !== '1' ) { continue; }
+            $departments[] = [
+                '@type' => ! empty( $loc['type'] ) ? $loc['type'] : 'LocalBusiness',
+                '@id'   => $url . ( $li > 0 ? '#localbusiness-' . (int) $li : '#localbusiness' ),
+            ];
+        }
+
+        if ( ! empty( $departments ) ) {
+            $s['department'] = count( $departments ) === 1 ? $departments[0] : $departments;
+        }
+
+        /* ── sameAs social profiles ───────────────── */
+        $same = array_filter( [
+            $g['social_fb'] ?? '', $g['social_tw'] ?? '',
+            $g['social_ig'] ?? '', $g['social_li'] ?? '',
+            $g['social_yt'] ?? '', $g['social_tt'] ?? '',
+        ] );
         if ( $same ) { $s['sameAs'] = array_values( $same ); }
+
         return $s;
     }
 
@@ -449,15 +525,161 @@ class GVSEO_Frontend {
         return $s;
     }
 
-    /* ── LocalBusiness ────────────────────────────── */
-    private static function local_business( $post, $g ) {
-        $url = trailingslashit( $g['org_url'] );
-        $s   = [ '@context' => 'https://schema.org', '@type' => 'LocalBusiness',
-                 '@id' => $url . '#localbusiness', 'name' => $g['org_name'], 'url' => $g['org_url'] ];
-        if ( $g['org_email'] ) { $s['email'] = $g['org_email']; }
-        $img = self::post_image( $post->ID );
-        if ( $img ) { $s['image'] = $img; }
+    /* ── LocalBusiness — Global Schema (all pages) ──── */
+
+    /**
+     * Builds a fully schema.org-validator-compliant LocalBusiness schema.
+     * Outputs as a global entity on every page (not per-page).
+     * Validated against https://validator.schema.org/
+     *
+     * @param  array $g Global settings.
+     * @return array|null
+     */
+    public static function output_local_business( $loc, $li, $g ) {
+        $site_url = trailingslashit( $g['org_url'] );
+        $lb_name  = ! empty( $loc['name'] ) ? $loc['name'] : $g['org_name'];
+        $lb_type  = ! empty( $loc['type'] ) ? $loc['type'] : 'LocalBusiness';
+        $lb_url   = $g['org_url'];
+
+        $id_suffix = $li > 0 ? '#localbusiness-' . (int) $li : '#localbusiness';
+        $s = [
+            '@context' => 'https://schema.org',
+            '@type'    => $lb_type,
+            '@id'      => $site_url . $id_suffix,
+            'name'     => $lb_name,
+            'url'      => $lb_url,
+        ];
+
+        // Description
+        if ( ! empty( $loc['description'] ) ) {
+            $s['description'] = $loc['description'];
+        }
+
+        // Telephone
+        $phone = ! empty( $loc['phone'] ) ? $loc['phone'] : ( $g['org_phone'] ?? '' );
+        if ( $phone ) { $s['telephone'] = $phone; }
+
+        // Email
+        $email = ! empty( $loc['email'] ) ? $loc['email'] : ( $g['org_email'] ?? '' );
+        if ( $email ) { $s['email'] = $email; }
+
+        // Image + Logo from org
+        if ( ! empty( $g['org_logo'] ) ) {
+            $dim  = self::image_dims( $g['org_logo'] );
+            $logo = [ '@type' => 'ImageObject', 'url' => $g['org_logo'] ];
+            if ( $dim ) { $logo['width'] = $dim[0]; $logo['height'] = $dim[1]; }
+            $s['image'] = $logo;
+            $s['logo']  = $logo;
+        }
+
+        // Postal Address
+        $street   = ! empty( $loc['street'] )   ? $loc['street']   : ( $g['org_street'] ?? '' );
+        $city     = ! empty( $loc['city'] )     ? $loc['city']     : ( $g['org_city'] ?? '' );
+        $state    = ! empty( $loc['state'] )    ? $loc['state']    : ( $g['org_state'] ?? '' );
+        $postcode = ! empty( $loc['postcode'] ) ? $loc['postcode'] : ( $g['org_postcode'] ?? '' );
+        $country  = ! empty( $loc['country'] )  ? $loc['country']  : ( $g['org_country'] ?? '' );
+
+        if ( $street || $city ) {
+            $addr = [ '@type' => 'PostalAddress' ];
+            if ( $street )   { $addr['streetAddress']   = $street; }
+            if ( $city )     { $addr['addressLocality']  = $city; }
+            if ( $state )    { $addr['addressRegion']    = $state; }
+            if ( $postcode ) { $addr['postalCode']       = $postcode; }
+            if ( $country )  { $addr['addressCountry']   = strtoupper( $country ); }
+            $s['address'] = $addr;
+        }
+
+        // Geo coordinates
+        if ( ! empty( $loc['lat'] ) && ! empty( $loc['lng'] ) ) {
+            $s['geo'] = [
+                '@type'     => 'GeoCoordinates',
+                'latitude'  => (float) $loc['lat'],
+                'longitude' => (float) $loc['lng'],
+            ];
+        }
+
+        // Map URL
+        if ( ! empty( $loc['maps_url'] ) ) {
+            $s['hasMap'] = $loc['maps_url'];
+        }
+
+        // Business details
+        if ( ! empty( $loc['price_range'] ) )  { $s['priceRange']         = $loc['price_range']; }
+        if ( ! empty( $loc['payment'] ) )       { $s['paymentAccepted']    = $loc['payment']; }
+        if ( ! empty( $loc['currencies'] ) )    { $s['currenciesAccepted'] = $loc['currencies']; }
+        if ( ! empty( $loc['area_served'] ) )   { $s['areaServed']         = $loc['area_served']; }
+
+        // Opening hours — schema.org OpeningHoursSpecification
+        // DayOfWeek values must be full schema.org URIs per validator
+        $day_uri_map = [
+            'Monday'    => 'https://schema.org/Monday',
+            'Tuesday'   => 'https://schema.org/Tuesday',
+            'Wednesday' => 'https://schema.org/Wednesday',
+            'Thursday'  => 'https://schema.org/Thursday',
+            'Friday'    => 'https://schema.org/Friday',
+            'Saturday'  => 'https://schema.org/Saturday',
+            'Sunday'    => 'https://schema.org/Sunday',
+        ];
+
+        $hours_spec = [];
+        foreach ( (array) ( $loc['hours'] ?? [] ) as $group ) {
+            if ( empty( $group['days'] ) || empty( $group['opens'] ) || empty( $group['closes'] ) ) {
+                continue;
+            }
+            $day_uris = [];
+            foreach ( (array) $group['days'] as $day ) {
+                if ( isset( $day_uri_map[ $day ] ) ) {
+                    $day_uris[] = $day_uri_map[ $day ];
+                }
+            }
+            if ( ! $day_uris ) { continue; }
+            $hours_spec[] = [
+                '@type'      => 'OpeningHoursSpecification',
+                'dayOfWeek'  => $day_uris,
+                'opens'      => $group['opens'],
+                'closes'     => $group['closes'],
+            ];
+        }
+        if ( $hours_spec ) {
+            $s['openingHoursSpecification'] = $hours_spec;
+        }
+
+        // sameAs — inherit from org social profiles
+        if ( '1' === ( $loc['same_as_org'] ?? '1' ) ) {
+            $same = array_filter( [
+                $g['social_fb'] ?? '', $g['social_tw'] ?? '',
+                $g['social_ig'] ?? '', $g['social_li'] ?? '',
+                $g['social_yt'] ?? '', $g['social_tt'] ?? '',
+            ] );
+            if ( $same ) { $s['sameAs'] = array_values( $same ); }
+        }
+
+        // Link to the Organization entity (recommended by schema.org)
+        $s['parentOrganization'] = [
+            '@type' => 'Organization',
+            '@id'   => $site_url . '#organization',
+        ];
+
         return $s;
+    }
+
+    /* ── LocalBusiness — Per-page schema type ────────── */
+    private static function local_business( $post, $g ) {
+        // If there are configured locations, use the first enabled one.
+        $locs = $g['lb_locations'] ?? [];
+        foreach ( $locs as $li => $loc ) {
+            if ( ( $loc['enabled'] ?? '1' ) !== '1' ) { continue; }
+            return self::output_local_business( $loc, $li, $g );
+        }
+        // Fallback: minimal LocalBusiness from org settings.
+        $url = trailingslashit( $g['org_url'] );
+        return [
+            '@context' => 'https://schema.org',
+            '@type'    => 'LocalBusiness',
+            '@id'      => $url . '#localbusiness',
+            'name'     => $g['org_name'],
+            'url'      => $g['org_url'],
+        ];
     }
 
     /* ── JobPosting ───────────────────────────────── */

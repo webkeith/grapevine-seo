@@ -460,3 +460,385 @@
     }
 
 })(jQuery);
+
+/* ── Local Business Settings JS ────────────────────────────────────────── */
+(function() {
+    // Toggle lb fields panel
+    var lbToggle = document.getElementById('gvseo-lb-toggle');
+    var lbFields = document.getElementById('gvseo-lb-fields');
+    if (lbToggle && lbFields) {
+        lbToggle.addEventListener('change', function() {
+            lbFields.style.display = this.checked ? '' : 'none';
+        });
+    }
+
+    // Day pill toggle — keep .active class in sync with checkbox
+    document.querySelectorAll('.gvseo-day-pill').forEach(function(pill) {
+        var cb = pill.querySelector('input[type="checkbox"]');
+        if (!cb) return;
+        pill.classList.toggle('active', cb.checked);
+        cb.addEventListener('change', function() {
+            pill.classList.toggle('active', this.checked);
+        });
+        pill.addEventListener('click', function(e) {
+            if (e.target === cb) return; // native checkbox already handled
+            cb.checked = !cb.checked;
+            cb.dispatchEvent(new Event('change'));
+            e.preventDefault();
+        });
+    });
+
+    var hoursWrap = document.getElementById('gvseo-lb-hours');
+    var addBtn    = document.getElementById('gvseo-add-hours');
+    if (!hoursWrap || !addBtn) return;
+
+    var allDays = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+    // Remove row
+    function wireRemove(row) {
+        var btn = row.querySelector('.gvseo-remove-hours');
+        if (!btn) return;
+        btn.addEventListener('click', function() {
+            row.parentNode.removeChild(row);
+            reindex();
+        });
+    }
+
+    // Reindex all rows after add/remove
+    function reindex() {
+        var rows = hoursWrap.querySelectorAll('.gvseo-hours-row');
+        rows.forEach(function(row, i) {
+            row.setAttribute('data-idx', i);
+            row.querySelectorAll('[name^="lb_hour_days["]').forEach(function(cb) {
+                cb.name = 'lb_hour_days[' + i + '][]';
+            });
+            var opens = row.querySelector('[name^="lb_hour_opens"]');
+            if (opens) opens.name = 'lb_hour_opens[' + i + ']';
+            var closes = row.querySelector('[name^="lb_hour_closes"]');
+            if (closes) closes.name = 'lb_hour_closes[' + i + ']';
+        });
+    }
+
+    // Build a new row
+    function buildRow(idx) {
+        var row = document.createElement('div');
+        row.className = 'gvseo-hours-row';
+        row.setAttribute('data-idx', idx);
+
+        var daysDiv = document.createElement('div');
+        daysDiv.className = 'gvseo-hours-days';
+        allDays.forEach(function(day) {
+            var lbl = document.createElement('label');
+            lbl.className = 'gvseo-day-pill';
+            var cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.name = 'lb_hour_days[' + idx + '][]';
+            cb.value = day;
+            cb.addEventListener('change', function() {
+                lbl.classList.toggle('active', this.checked);
+            });
+            lbl.addEventListener('click', function(e) {
+                if (e.target === cb) return;
+                cb.checked = !cb.checked;
+                cb.dispatchEvent(new Event('change'));
+                e.preventDefault();
+            });
+            lbl.appendChild(cb);
+            lbl.appendChild(document.createTextNode(day.slice(0, 3)));
+            daysDiv.appendChild(lbl);
+        });
+
+        var timesDiv = document.createElement('div');
+        timesDiv.className = 'gvseo-hours-times';
+
+        var opens = document.createElement('input');
+        opens.type = 'time'; opens.name = 'lb_hour_opens[' + idx + ']'; opens.value = '09:00';
+        var closes = document.createElement('input');
+        closes.type = 'time'; closes.name = 'lb_hour_closes[' + idx + ']'; closes.value = '17:00';
+        var sep = document.createElement('span');
+        sep.textContent = 'to';
+
+        var removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'gvseo-btn gvseo-btn-ghost gvseo-btn-xs gvseo-remove-hours';
+        removeBtn.textContent = '✕';
+
+        timesDiv.appendChild(opens);
+        timesDiv.appendChild(sep);
+        timesDiv.appendChild(closes);
+        timesDiv.appendChild(removeBtn);
+        row.appendChild(daysDiv);
+        row.appendChild(timesDiv);
+        wireRemove(row);
+        return row;
+    }
+
+    // Wire existing rows
+    hoursWrap.querySelectorAll('.gvseo-hours-row').forEach(wireRemove);
+
+    // Add new row
+    addBtn.addEventListener('click', function() {
+        var rows = hoursWrap.querySelectorAll('.gvseo-hours-row');
+        hoursWrap.appendChild(buildRow(rows.length));
+    });
+})();
+
+/* ── LocalBusiness Multi-location JS ─────────────────────────────────── */
+(function() {
+    var locsWrap  = document.getElementById('gvseo-lb-locations');
+    var addLocBtn = document.getElementById('gvseo-add-location');
+    var emptyMsg  = document.getElementById('gvseo-lb-empty');
+    if (!locsWrap) return;
+
+    var allDays = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+    /* ── Day pills ─────────────────────────── */
+    function wireDayPills(container) {
+        container.querySelectorAll('.gvseo-day-pill').forEach(function(pill) {
+            var cb = pill.querySelector('input[type="checkbox"]');
+            if (!cb) return;
+            pill.classList.toggle('active', cb.checked);
+            cb.addEventListener('change', function() {
+                pill.classList.toggle('active', this.checked);
+            });
+            pill.addEventListener('click', function(e) {
+                if (e.target === cb) return;
+                cb.checked = !cb.checked;
+                cb.dispatchEvent(new Event('change'));
+                e.preventDefault();
+            });
+        });
+    }
+
+    /* ── Collapse/expand card ──────────────── */
+    function wireCollapse(card) {
+        var btn = card.querySelector('.gvseo-lb-toggle-btn');
+        if (!btn) return;
+        btn.addEventListener('click', function() {
+            card.classList.toggle('collapsed');
+        });
+    }
+
+    /* ── Remove location ────────────────────── */
+    function wireRemoveLocation(card) {
+        var btn = card.querySelector('.gvseo-lb-remove');
+        if (!btn) return;
+        btn.addEventListener('click', function() {
+            if (!confirm('Remove this location?')) return;
+            card.parentNode.removeChild(card);
+            reindexLocations();
+            if (locsWrap.querySelectorAll('.gvseo-lb-card').length === 0 && emptyMsg) {
+                emptyMsg.style.display = '';
+            }
+        });
+    }
+
+    /* ── Live update card title ─────────────── */
+    function wireTitleSync(card) {
+        var nameInput = card.querySelector('.gvseo-lb-name-input');
+        var titleEl   = card.querySelector('.gvseo-lb-card-name');
+        var typeSelect= card.querySelector('.gvseo-lb-type-select');
+        var li        = parseInt(card.getAttribute('data-loc'), 10);
+        if (nameInput && titleEl) {
+            nameInput.addEventListener('input', function() {
+                titleEl.textContent = this.value || 'Location ' + (li + 1);
+            });
+        }
+    }
+
+    /* ── Hours per location ─────────────────── */
+    function wireHours(card) {
+        var li      = parseInt(card.getAttribute('data-loc'), 10);
+        var wrap    = card.querySelector('.gvseo-hours-wrap');
+        var addBtn  = card.querySelector('.gvseo-add-hours');
+        if (!wrap || !addBtn) return;
+
+        function reindexHours() {
+            wrap.querySelectorAll('.gvseo-hours-row').forEach(function(row, hi) {
+                row.querySelectorAll('[name*="[hour_days]"]').forEach(function(cb) {
+                    cb.name = 'lb_loc[' + li + '][hour_days][' + hi + '][]';
+                });
+                var opens = row.querySelector('[name*="[hour_opens]"]');
+                if (opens) opens.name = 'lb_loc[' + li + '][hour_opens][' + hi + ']';
+                var closes = row.querySelector('[name*="[hour_closes]"]');
+                if (closes) closes.name = 'lb_loc[' + li + '][hour_closes][' + hi + ']';
+            });
+        }
+
+        function buildHourRow(hi) {
+            var row = document.createElement('div');
+            row.className = 'gvseo-hours-row';
+            var daysDiv = document.createElement('div');
+            daysDiv.className = 'gvseo-hours-days';
+            allDays.forEach(function(day) {
+                var lbl = document.createElement('label');
+                lbl.className = 'gvseo-day-pill';
+                var cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.name = 'lb_loc[' + li + '][hour_days][' + hi + '][]';
+                cb.value = day;
+                cb.addEventListener('change', function() { lbl.classList.toggle('active', this.checked); });
+                lbl.addEventListener('click', function(e) {
+                    if (e.target === cb) return;
+                    cb.checked = !cb.checked;
+                    cb.dispatchEvent(new Event('change'));
+                    e.preventDefault();
+                });
+                lbl.appendChild(cb);
+                lbl.appendChild(document.createTextNode(day.slice(0, 3)));
+                daysDiv.appendChild(lbl);
+            });
+            var timesDiv = document.createElement('div');
+            timesDiv.className = 'gvseo-hours-times';
+            var opens = document.createElement('input');
+            opens.type = 'time'; opens.name = 'lb_loc[' + li + '][hour_opens][' + hi + ']'; opens.value = '09:00';
+            var closes = document.createElement('input');
+            closes.type = 'time'; closes.name = 'lb_loc[' + li + '][hour_closes][' + hi + ']'; closes.value = '17:00';
+            var sep = document.createElement('span'); sep.textContent = 'to';
+            var delBtn = document.createElement('button');
+            delBtn.type = 'button'; delBtn.className = 'gvseo-btn gvseo-btn-ghost gvseo-btn-xs gvseo-remove-hours';
+            delBtn.textContent = '✕';
+            delBtn.addEventListener('click', function() { row.parentNode.removeChild(row); reindexHours(); });
+            timesDiv.appendChild(opens); timesDiv.appendChild(sep);
+            timesDiv.appendChild(closes); timesDiv.appendChild(delBtn);
+            row.appendChild(daysDiv); row.appendChild(timesDiv);
+            return row;
+        }
+
+        // Wire existing remove buttons
+        wrap.querySelectorAll('.gvseo-remove-hours').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                btn.closest('.gvseo-hours-row').remove();
+                reindexHours();
+            });
+        });
+
+        addBtn.addEventListener('click', function() {
+            var hi = wrap.querySelectorAll('.gvseo-hours-row').length;
+            wrap.appendChild(buildHourRow(hi));
+        });
+    }
+
+    /* ── Reindex all location cards ─────────── */
+    function reindexLocations() {
+        locsWrap.querySelectorAll('.gvseo-lb-card').forEach(function(card, li) {
+            card.setAttribute('data-loc', li);
+            card.querySelectorAll('[name]').forEach(function(el) {
+                el.name = el.name.replace(/lb_loc\[\d+\]/, 'lb_loc[' + li + ']');
+            });
+            var titleEl = card.querySelector('.gvseo-lb-card-name');
+            if (titleEl) {
+                var nameInput = card.querySelector('.gvseo-lb-name-input');
+                if (!nameInput || !nameInput.value) {
+                    titleEl.textContent = 'Location ' + (li + 1);
+                }
+            }
+        });
+    }
+
+    /* ── Build a new blank location card ────── */
+    function buildLocationCard(li) {
+        var card = document.createElement('div');
+        card.className = 'gvseo-lb-card';
+        card.setAttribute('data-loc', li);
+
+        var lb_types = {
+            'LocalBusiness': 'Local Business (generic)',
+            'Restaurant': 'Restaurant', 'Dentist': 'Dentist',
+            'Attorney': 'Attorney / Lawyer', 'BeautySalon': 'Beauty Salon',
+            'DigitalMarketingAgency': 'Digital Marketing Agency',
+            'RealEstateAgent': 'Real Estate Agent', 'Hotel': 'Hotel',
+            'Physician': 'Physician / Doctor', 'Store': 'Retail Store',
+            'ProfessionalService': 'Professional Service',
+        };
+
+        var typeOptions = Object.entries(lb_types).map(function(e) {
+            return '<option value="' + e[0] + '">' + e[1] + '</option>';
+        }).join('');
+
+        var dayPills = allDays.map(function(d) {
+            return '<label class="gvseo-day-pill"><input type="checkbox" name="lb_loc[' + li + '][hour_days][0][]" value="' + d + '">' + d.slice(0, 3) + '</label>';
+        }).join('');
+
+        card.innerHTML = '<div class="gvseo-lb-card-head">' +
+            '<div class="gvseo-lb-card-title">' +
+                '<button type="button" class="gvseo-lb-toggle-btn">▾</button>' +
+                '<strong class="gvseo-lb-card-name">Location ' + (li + 1) + '</strong>' +
+            '</div>' +
+            '<div class="gvseo-lb-card-actions">' +
+                '<label class="gvseo-toggle"><input type="checkbox" name="lb_loc[' + li + '][enabled]" value="1" checked><span></span></label>' +
+                '<button type="button" class="gvseo-btn gvseo-btn-ghost gvseo-btn-xs gvseo-lb-remove">✕ Remove</button>' +
+            '</div>' +
+        '</div>' +
+        '<div class="gvseo-lb-card-body">' +
+            '<div class="gvseo-field-row">' +
+                '<div class="gvseo-field"><label>Business Type</label>' +
+                    '<select name="lb_loc[' + li + '][type]" class="gvseo-cpt-select gvseo-lb-type-select">' + typeOptions + '</select></div>' +
+                '<div class="gvseo-field"><label>Location / Branch Name</label>' +
+                    '<input type="text" name="lb_loc[' + li + '][name]" class="gvseo-lb-name-input" placeholder="e.g. Main Office, North Branch"></div>' +
+            '</div>' +
+            '<div class="gvseo-field"><label>Street Address</label><input type="text" name="lb_loc[' + li + '][street]"></div>' +
+            '<div class="gvseo-field-row" style="margin-top:10px;">' +
+                '<div class="gvseo-field"><label>City</label><input type="text" name="lb_loc[' + li + '][city]"></div>' +
+                '<div class="gvseo-field"><label>State</label><input type="text" name="lb_loc[' + li + '][state]"></div>' +
+                '<div class="gvseo-field"><label>Postcode</label><input type="text" name="lb_loc[' + li + '][postcode]"></div>' +
+                '<div class="gvseo-field"><label>Country</label><input type="text" name="lb_loc[' + li + '][country]" value="AU" maxlength="2"></div>' +
+            '</div>' +
+            '<div class="gvseo-field-row" style="margin-top:10px;">' +
+                '<div class="gvseo-field"><label>Phone</label><input type="tel" name="lb_loc[' + li + '][phone]"></div>' +
+                '<div class="gvseo-field"><label>Email</label><input type="email" name="lb_loc[' + li + '][email]"></div>' +
+                '<div class="gvseo-field"><label>Latitude</label><input type="text" name="lb_loc[' + li + '][lat]"></div>' +
+                '<div class="gvseo-field"><label>Longitude</label><input type="text" name="lb_loc[' + li + '][lng]"></div>' +
+            '</div>' +
+            '<h4 class="gvseo-section-h4">🕐 Opening Hours</h4>' +
+            '<div class="gvseo-hours-wrap" data-loc="' + li + '">' +
+                '<div class="gvseo-hours-row">' +
+                    '<div class="gvseo-hours-days">' + dayPills + '</div>' +
+                    '<div class="gvseo-hours-times">' +
+                        '<input type="time" name="lb_loc[' + li + '][hour_opens][0]" value="09:00">' +
+                        '<span>to</span>' +
+                        '<input type="time" name="lb_loc[' + li + '][hour_closes][0]" value="17:00">' +
+                        '<button type="button" class="gvseo-btn gvseo-btn-ghost gvseo-btn-xs gvseo-remove-hours">✕</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<button type="button" class="gvseo-btn gvseo-btn-ghost gvseo-btn-xs gvseo-add-hours" data-loc="' + li + '" style="margin-top:6px;">+ Add Hours Group</button>' +
+            '<div class="gvseo-toggle-row" style="margin-top:16px;">' +
+                '<div><strong>Inherit Social Profiles (sameAs)</strong></div>' +
+                '<label class="gvseo-toggle"><input type="checkbox" name="lb_loc[' + li + '][same_as_org]" value="1" checked><span></span></label>' +
+            '</div>' +
+            '<input type="hidden" name="lb_loc[' + li + '][description]" value="">' +
+            '<input type="hidden" name="lb_loc[' + li + '][maps_url]" value="">' +
+            '<input type="hidden" name="lb_loc[' + li + '][price_range]" value="">' +
+            '<input type="hidden" name="lb_loc[' + li + '][payment]" value="">' +
+            '<input type="hidden" name="lb_loc[' + li + '][currencies]" value="AUD">' +
+            '<input type="hidden" name="lb_loc[' + li + '][area_served]" value="">' +
+            '<input type="hidden" name="lb_loc[' + li + '][lng]" value="">' +
+        '</div>';
+
+        wireCollapse(card);
+        wireRemoveLocation(card);
+        wireTitleSync(card);
+        wireHours(card);
+        wireDayPills(card);
+        return card;
+    }
+
+    /* ── Init existing cards ─────────────────── */
+    locsWrap.querySelectorAll('.gvseo-lb-card').forEach(function(card) {
+        wireCollapse(card);
+        wireRemoveLocation(card);
+        wireTitleSync(card);
+        wireHours(card);
+        wireDayPills(card);
+    });
+
+    /* ── Add location button ─────────────────── */
+    if (addLocBtn) {
+        addLocBtn.addEventListener('click', function() {
+            if (emptyMsg) emptyMsg.style.display = 'none';
+            var li = locsWrap.querySelectorAll('.gvseo-lb-card').length;
+            locsWrap.appendChild(buildLocationCard(li));
+        });
+    }
+})();
