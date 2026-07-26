@@ -40,6 +40,7 @@ class GVSEO_Upgrader {
         '2.5.0' => 'migrate_2_5_0',
         '2.6.0' => 'migrate_2_6_0',
         '2.7.0' => 'migrate_2_7_0',
+        '2.10.0' => 'migrate_2_10_0',
     ];
 
     /* ═══════════════════════════════════════════════════════════════
@@ -312,6 +313,21 @@ class GVSEO_Upgrader {
             update_option( 'gvseo_global_settings', $settings );
         }
         return 'Organization founder field added.';
+    }
+
+    /**
+     * v2.10.0 — Meta/OG tag output toggle.
+     * Defaults to '1' (enabled) so existing sites see no change in behavior
+     * until they explicitly disable it — e.g. sites already running Yoast
+     * or Rank Math, where Grapevine's own OG tags create duplicates.
+     */
+    private static function migrate_2_10_0() {
+        $settings = get_option( 'gvseo_global_settings', [] );
+        if ( ! array_key_exists( 'meta_tags_enabled', $settings ) ) {
+            $settings['meta_tags_enabled'] = '1';
+            update_option( 'gvseo_global_settings', $settings );
+        }
+        return 'Meta/OG tag output toggle added.';
     }
 
     /* ═══════════════════════════════════════════════════════════════

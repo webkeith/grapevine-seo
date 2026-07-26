@@ -54,8 +54,10 @@ class GVSEO_Frontend {
             }
         }
 
-        // 6. Meta/OG tags.
-        self::meta_tags();
+        // 6. Meta/OG tags — skippable when another SEO plugin (Yoast/Rank Math) already outputs these.
+        if ( '1' === ( $g['meta_tags_enabled'] ?? '1' ) ) {
+            self::meta_tags();
+        }
 
         foreach ( $schemas as $s ) {
             if ( ! $s ) { continue; }

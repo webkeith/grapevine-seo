@@ -70,6 +70,7 @@ class GVSEO_Settings {
             'sitelinks'         => '1',
             'organization'      => '1',
             'woo_bridge'        => '1',
+            'meta_tags_enabled' => '1',  // ← NEW: disable to avoid duplicate OG/meta tags when Yoast/Rank Math is active
 
             // Exclusions
             'excluded_types'    => [],           // ← NEW: user-selected types to exclude
@@ -142,7 +143,7 @@ class GVSEO_Settings {
             }
 
             // Toggles
-            $toggles = [ 'breadcrumbs','sitelinks','organization','woo_bridge','org_addr2_enabled' ];
+            $toggles = [ 'breadcrumbs','sitelinks','organization','woo_bridge','org_addr2_enabled','meta_tags_enabled' ];
             foreach ( $toggles as $t ) {
                 $s[ $t ] = isset( $_POST[ $t ] ) ? '1' : '0';
             }
@@ -442,6 +443,33 @@ class GVSEO_Settings {
                         <?php endforeach; ?>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- ── Meta & Social Tags ───────────────────────────────── -->
+            <div class="gvseo-card">
+                <div class="gvseo-card-head">
+                    <h3><span class="dashicons dashicons-tag" style="font-size:16px;width:16px;height:16px;vertical-align:-2px;margin-right:4px;color:var(--c-blue)"></span>Meta & Social Tags</h3>
+                    <p>Controls the meta description and Open Graph tags Grapevine SEO outputs in &lt;head&gt;.</p>
+                </div>
+                <div class="gvseo-card-body">
+                    <?php if ( GVSEO_Compat::has_seo_plugin() ) : ?>
+                        <div class="gvseo-notice gvseo-notice-warning" style="margin-bottom:14px;padding:12px 14px;border-radius:var(--r-sm);background:var(--c-yell-lt);border:1px solid var(--c-yellow);font-size:12px;color:var(--c-txt);">
+                            <strong><?php echo esc_html( GVSEO_Compat::active_plugin_name() ); ?> detected</strong> — it's already outputting its own meta description and Open Graph tags on this site.
+                            Leaving this toggle on will output a <em>second</em>, competing set of <code>og:title</code>, <code>og:description</code>, and <code>og:url</code> tags alongside <?php echo esc_html( GVSEO_Compat::active_plugin_name() ); ?>'s — different platforms (Facebook, LinkedIn, Slack) may pick either one unpredictably.
+                            Recommended: turn this off and let <?php echo esc_html( GVSEO_Compat::active_plugin_name() ); ?> handle meta/OG tags exclusively.
+                        </div>
+                    <?php endif; ?>
+                    <div class="gvseo-toggle-row">
+                        <div>
+                            <strong>Output Meta Description & Open Graph Tags</strong>
+                            <p>When off, Grapevine SEO skips <code>&lt;meta name="description"&gt;</code> and all <code>og:*</code> tags entirely — schema (JSON-LD) output is unaffected either way.</p>
+                        </div>
+                        <label class="gvseo-toggle">
+                            <input type="checkbox" name="meta_tags_enabled" value="1" <?php checked( $s['meta_tags_enabled'], '1' ); ?>>
+                            <span></span>
+                        </label>
+                    </div>
                 </div>
             </div>
 
