@@ -576,7 +576,7 @@ class GVSEO_Settings {
             'WebPage' => 'Web Page (generic)', 'Article' => 'Article',
             'BlogPosting' => 'Blog Post', 'NewsArticle' => 'News Article',
             'Product' => 'Product', 'Event' => 'Event', 'FAQPage' => 'FAQ Page',
-            'HowTo' => 'How-To', 'Recipe' => 'Recipe',
+            'HowTo' => 'How-To', 'Recipe' => 'Recipe', 'Person' => 'Person',
             'LocalBusiness' => 'Local Business', 'JobPosting' => 'Job Posting',
             'Course' => 'Course', 'SoftwareApplication' => 'Software App',
             'VideoObject' => 'Video', 'Custom' => 'Custom JSON-LD',

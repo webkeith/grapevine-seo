@@ -156,6 +156,9 @@ class GVSEO_Frontend {
             case 'Recipe':
                 return self::recipe( $post, $g );
 
+            case 'Person':
+                return self::person( $post, $g );
+
             case 'LocalBusiness':
                 return self::local_business( $post, $g );
 
@@ -716,6 +719,34 @@ class GVSEO_Frontend {
             'provider'    => [ '@type' => 'Organization', 'name' => $g['org_name'], 'sameAs' => $g['org_url'] ],
             'url'         => get_permalink( $post->ID ),
         ];
+    }
+
+    /* ── Person ───────────────────────────────────── */
+    private static function person( $post, $g ) {
+        $job_title  = get_post_meta( $post->ID, '_gvseo_person_job_title', true );
+        $works_for  = get_post_meta( $post->ID, '_gvseo_person_works_for', true ) ?: $g['org_name'];
+        $email      = get_post_meta( $post->ID, '_gvseo_person_email', true );
+        $sameas_raw = get_post_meta( $post->ID, '_gvseo_person_sameas', true );
+        $sameas     = array_values( array_filter( array_map( 'trim', explode( "\n", (string) $sameas_raw ) ) ) );
+
+        $s = [
+            '@context'    => 'https://schema.org', '@type' => 'Person',
+            'name'        => html_entity_decode( get_the_title( $post->ID ) ),
+            'url'         => get_permalink( $post->ID ),
+            'description' => wp_strip_all_tags( get_the_excerpt( $post->ID ) ),
+        ];
+
+        $img = self::post_image( $post->ID );
+        if ( $img ) { $s['image'] = $img['url']; }
+
+        if ( $job_title ) { $s['jobTitle'] = $job_title; }
+        if ( $works_for ) {
+            $s['worksFor'] = [ '@type' => 'Organization', 'name' => $works_for, 'sameAs' => $g['org_url'] ];
+        }
+        if ( $email ) { $s['email'] = 'mailto:' . sanitize_email( $email ); }
+        if ( $sameas ) { $s['sameAs'] = $sameas; }
+
+        return $s;
     }
 
     /* ── SoftwareApplication ──────────────────────── */

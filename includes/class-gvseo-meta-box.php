@@ -59,6 +59,10 @@ class GVSEO_Meta_Box {
         $venue_addr   = get_post_meta( $post->ID, '_gvseo_venue_address', true );
         $venue_city   = get_post_meta( $post->ID, '_gvseo_venue_city', true );
         $venue_ctry   = get_post_meta( $post->ID, '_gvseo_venue_country', true );
+        $person_job   = get_post_meta( $post->ID, '_gvseo_person_job_title', true );
+        $person_works = get_post_meta( $post->ID, '_gvseo_person_works_for', true );
+        $person_email = get_post_meta( $post->ID, '_gvseo_person_email', true );
+        $person_sameas= get_post_meta( $post->ID, '_gvseo_person_sameas', true );
         $prep_time    = get_post_meta( $post->ID, '_gvseo_prep_time', true );
         $cook_time    = get_post_meta( $post->ID, '_gvseo_cook_time', true );
         $ingredients  = get_post_meta( $post->ID, '_gvseo_ingredients', true );
@@ -243,6 +247,20 @@ class GVSEO_Meta_Box {
                         </div>
                     </div>
 
+                    <!-- Person fields -->
+                    <div class="gvseo-schema-group" data-for="Person">
+                        <div class="gvseo-mb-section-label">Person Details <span class="gvseo-mb-muted">— name comes from the page title, image from the featured image</span></div>
+                        <div class="gvseo-mb-field-row">
+                            <div class="gvseo-mb-field"><label>Job Title</label><input type="text" name="_gvseo_person_job_title" value="<?php echo esc_attr( $person_job ); ?>" placeholder="Senior Editor"></div>
+                            <div class="gvseo-mb-field"><label>Works For <span class="gvseo-mb-muted">(defaults to your org)</span></label><input type="text" name="_gvseo_person_works_for" value="<?php echo esc_attr( $person_works ); ?>" placeholder="<?php echo esc_attr( GVSEO_Settings::get()['org_name'] ?? '' ); ?>"></div>
+                            <div class="gvseo-mb-field"><label>Email</label><input type="email" name="_gvseo_person_email" value="<?php echo esc_attr( $person_email ); ?>"></div>
+                        </div>
+                        <div class="gvseo-mb-field">
+                            <label>Same As <span class="gvseo-mb-muted">(one profile URL per line — LinkedIn, X, personal site…)</span></label>
+                            <textarea name="_gvseo_person_sameas" rows="3" placeholder="https://linkedin.com/in/…&#10;https://twitter.com/…"><?php echo esc_textarea( $person_sameas ); ?></textarea>
+                        </div>
+                    </div>
+
                     <!-- Custom JSON-LD -->
                     <div class="gvseo-schema-group" data-for="Custom">
                         <div class="gvseo-mb-section-label">Custom JSON-LD</div>
@@ -380,6 +398,7 @@ how to brew coffee', 'grapevine-seo' ); ?>"><?php echo esc_textarea( $kw_sec ); 
             '_gvseo_venue', '_gvseo_venue_address', '_gvseo_venue_city', '_gvseo_venue_country',
             '_gvseo_prep_time', '_gvseo_cook_time', '_gvseo_total_time', '_gvseo_recipe_yield', '_gvseo_calories',
             '_gvseo_focus_kw', '_gvseo_og_title', '_gvseo_og_desc', '_gvseo_og_image',
+            '_gvseo_person_job_title', '_gvseo_person_works_for', '_gvseo_person_email',
         ];
         foreach ( $texts as $k ) {
             update_post_meta( $post_id, $k, sanitize_text_field( wp_unslash( $_POST[ $k ] ?? '' ) ) );
@@ -389,6 +408,7 @@ how to brew coffee', 'grapevine-seo' ); ?>"><?php echo esc_textarea( $kw_sec ); 
         update_post_meta( $post_id, '_gvseo_meta_desc',          sanitize_textarea_field( wp_unslash( $_POST['_gvseo_meta_desc'] ?? '' ) ) );
         update_post_meta( $post_id, '_gvseo_focus_kw_secondary', sanitize_textarea_field( wp_unslash( $_POST['_gvseo_focus_kw_secondary'] ?? '' ) ) );
         update_post_meta( $post_id, '_gvseo_ingredients',  sanitize_textarea_field( wp_unslash( $_POST['_gvseo_ingredients'] ?? '' ) ) );
+        update_post_meta( $post_id, '_gvseo_person_sameas', sanitize_textarea_field( wp_unslash( $_POST['_gvseo_person_sameas'] ?? '' ) ) );
 
         /* Checkbox */
         update_post_meta( $post_id, '_gvseo_noindex', isset( $_POST['_gvseo_noindex'] ) ? '1' : '0' );
