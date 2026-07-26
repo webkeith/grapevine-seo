@@ -304,8 +304,21 @@ class GVSEO_Frontend {
                 if ( $cats ) {
                     $items[] = [ '@type' => 'ListItem', 'position' => $pos++, 'name' => $cats[0]->name, 'item' => get_category_link( $cats[0]->term_id ) ];
                 }
+            } elseif ( is_post_type_hierarchical( $post->post_type ) ) {
+                // Hierarchical post types (pages, and hierarchical CPTs):
+                // walk the post_parent chain so nested pages get one
+                // crumb per ancestor, matching the actual URL structure.
+                $ancestors = array_reverse( get_post_ancestors( $post->ID ) ); // root → immediate parent
+                foreach ( $ancestors as $ancestor_id ) {
+                    $items[] = [
+                        '@type'    => 'ListItem',
+                        'position' => $pos++,
+                        'name'     => html_entity_decode( get_the_title( $ancestor_id ) ),
+                        'item'     => get_permalink( $ancestor_id ),
+                    ];
+                }
             } else {
-                // Generic CPT: add the post type archive link.
+                // Generic non-hierarchical CPT: add the post type archive link.
                 $pt_obj = get_post_type_object( $post->post_type );
                 if ( $pt_obj && $pt_obj->has_archive ) {
                     $archive_url = get_post_type_archive_link( $post->post_type );
