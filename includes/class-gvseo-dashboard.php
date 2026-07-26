@@ -81,27 +81,29 @@ class GVSEO_Dashboard {
             <!-- ── Schema KPIs ───────────────────────────────────────── -->
             <div class="gvseo-kpi-grid">
                 <div class="gvseo-kpi gvseo-kpi-blue">
-                    <div class="gvseo-kpi-icon">📄</div>
+                    <div class="gvseo-kpi-icon"><span class="dashicons dashicons-media-document" style="color:var(--c-blue)"></span></div>
                     <div><div class="gvseo-kpi-val"><?php echo (int) $total; ?></div><div class="gvseo-kpi-lbl">Total Pages</div></div>
                 </div>
                 <div class="gvseo-kpi gvseo-kpi-green">
-                    <div class="gvseo-kpi-icon">✅</div>
+                    <div class="gvseo-kpi-icon"><span class="dashicons dashicons-yes-alt" style="color:var(--c-green)"></span></div>
                     <div><div class="gvseo-kpi-val"><?php echo (int) $with_schema; ?></div><div class="gvseo-kpi-lbl">With Schema</div></div>
                 </div>
                 <div class="gvseo-kpi gvseo-kpi-yellow">
-                    <div class="gvseo-kpi-icon">⚠️</div>
-                    <div><div class="gvseo-kpi-val"><?php echo (int) $without; ?></div><div class="gvseo-kpi-lbl">Without Schema</div></div>
+                    <div class="gvseo-kpi-icon"><span class="dashicons dashicons-info" style="color:var(--c-yellow)"></span></div>
+                    <div><div class="gvseo-kpi-val"><?php echo (int) $without; ?></div><div class="gvseo-kpi-lbl">Need a Little Love</div></div>
                 </div>
                 <div class="gvseo-kpi gvseo-kpi-purple">
-                    <div class="gvseo-kpi-icon">📊</div>
-                    <div><div class="gvseo-kpi-val"><?php echo (int) $pct; ?>%</div><div class="gvseo-kpi-lbl">Schema Coverage</div></div>
+                    <div class="gvseo-ring" style="background:conic-gradient(var(--c-blue) <?php echo (int) $pct; ?>%, var(--c-surf3) 0);">
+                        <div class="gvseo-ring-inner"><?php echo (int) $pct; ?>%</div>
+                    </div>
+                    <div><div class="gvseo-kpi-lbl" style="text-transform:none;font-size:12px;">Nice work — schema coverage across your site</div></div>
                 </div>
             </div>
 
             <!-- ── Schema by post type ───────────────────────────────── -->
             <?php if ( ! empty( $by_type ) ) : ?>
             <div class="gvseo-card">
-                <div class="gvseo-card-head"><h3>📦 Schema Coverage by Post Type</h3></div>
+                <div class="gvseo-card-head"><h3><span class="dashicons dashicons-category" style="font-size:16px;width:16px;height:16px;vertical-align:-2px;margin-right:4px;color:var(--c-blue)"></span>Schema Coverage by Post Type</h3></div>
                 <div class="gvseo-card-body gvseo-no-pad">
                     <table class="gvseo-table">
                         <thead>
@@ -139,20 +141,20 @@ class GVSEO_Dashboard {
             <!-- ── SEO Summary ───────────────────────────────────────── -->
             <?php if ( $seo['total'] > 0 ) : ?>
             <div class="gvseo-card">
-                <div class="gvseo-card-head"><h3>🔍 SEO Health Summary</h3><p>From last site-wide analysis — go to SEO Analysis to refresh.</p></div>
+                <div class="gvseo-card-head"><h3><span class="dashicons dashicons-search" style="font-size:16px;width:16px;height:16px;vertical-align:-2px;margin-right:4px;color:var(--c-blue)"></span>SEO Health Summary</h3><p>From last site-wide analysis — go to SEO Analysis to refresh.</p></div>
                 <div class="gvseo-card-body">
                     <div class="gvseo-kpi-grid">
                         <?php
                         $seo_kpis = [
-                            [ 'excellent', '🟢', 'Excellent', $seo['excellent'] ],
-                            [ 'good',      '🔵', 'Good',      $seo['good'] ],
-                            [ 'needs_work','🟡', 'Needs Work',$seo['needs_work'] ],
-                            [ 'poor',      '🔴', 'Poor',      $seo['poor'] ],
+                            [ 'excellent', 'Excellent', $seo['excellent'] ],
+                            [ 'good',      'Good',      $seo['good'] ],
+                            [ 'needs_work','Needs Work',$seo['needs_work'] ],
+                            [ 'poor',      'Poor',      $seo['poor'] ],
                         ];
                         $colors = [ 'excellent'=>'green','good'=>'blue','needs_work'=>'yellow','poor'=>'purple' ];
-                        foreach ( $seo_kpis as [ $key, $icon, $lbl, $cnt ] ) : ?>
+                        foreach ( $seo_kpis as [ $key, $lbl, $cnt ] ) : ?>
                             <div class="gvseo-kpi gvseo-kpi-<?php echo esc_attr( $colors[ $key ] ); ?>">
-                                <div class="gvseo-kpi-icon"><?php echo esc_html( $icon ); ?></div>
+                                <div class="gvseo-kpi-icon"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:var(--c-<?php echo esc_attr( $colors[ $key ] ); ?>);"></span></div>
                                 <div><div class="gvseo-kpi-val"><?php echo (int) $cnt; ?></div><div class="gvseo-kpi-lbl"><?php echo esc_html( $lbl ); ?></div></div>
                             </div>
                         <?php endforeach; ?>
@@ -169,13 +171,13 @@ class GVSEO_Dashboard {
 
             <!-- ── Quick Actions ─────────────────────────────────────── -->
             <div class="gvseo-card">
-                <div class="gvseo-card-head"><h3>🚀 Quick Actions</h3></div>
+                <div class="gvseo-card-head"><h3><span class="dashicons dashicons-lightbulb" style="font-size:16px;width:16px;height:16px;vertical-align:-2px;margin-right:4px;color:var(--c-blue)"></span>Quick Actions</h3></div>
                 <div class="gvseo-card-body gvseo-quick-links">
-                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=grapevine-seo-seo' ) ); ?>" class="gvseo-btn gvseo-btn-primary">🔍 SEO Analysis</a>
-                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=grapevine-seo-settings' ) ); ?>" class="gvseo-btn gvseo-btn-secondary">⚙️ Global Settings</a>
-                    <a href="<?php echo esc_url( home_url( '/sitemap.xml' ) ); ?>" target="_blank" class="gvseo-btn gvseo-btn-ghost">🗺️ View Sitemap ↗</a>
-                    <a href="https://search.google.com/test/rich-results" target="_blank" class="gvseo-btn gvseo-btn-ghost">🔗 Rich Results Tester ↗</a>
-                    <a href="https://validator.schema.org/" target="_blank" class="gvseo-btn gvseo-btn-ghost">✅ Schema Validator ↗</a>
+                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=grapevine-seo-seo' ) ); ?>" class="gvseo-btn gvseo-btn-primary"><span class="dashicons dashicons-search" style="font-size:14px;width:14px;height:14px;vertical-align:-2px"></span> SEO Analysis</a>
+                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=grapevine-seo-settings' ) ); ?>" class="gvseo-btn gvseo-btn-secondary"><span class="dashicons dashicons-admin-generic" style="font-size:14px;width:14px;height:14px;vertical-align:-2px"></span> Global Settings</a>
+                    <a href="<?php echo esc_url( home_url( '/sitemap.xml' ) ); ?>" target="_blank" class="gvseo-btn gvseo-btn-ghost"><span class="dashicons dashicons-location-alt" style="font-size:14px;width:14px;height:14px;vertical-align:-2px"></span> View Sitemap ↗</a>
+                    <a href="https://search.google.com/test/rich-results" target="_blank" class="gvseo-btn gvseo-btn-ghost"><span class="dashicons dashicons-admin-links" style="font-size:14px;width:14px;height:14px;vertical-align:-2px"></span> Rich Results Tester ↗</a>
+                    <a href="https://validator.schema.org/" target="_blank" class="gvseo-btn gvseo-btn-ghost"><span class="dashicons dashicons-yes-alt" style="font-size:14px;width:14px;height:14px;vertical-align:-2px"></span> Schema Validator ↗</a>
                 </div>
             </div>
 

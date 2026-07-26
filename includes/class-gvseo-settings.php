@@ -217,7 +217,7 @@ class GVSEO_Settings {
             $s['lb_locations'] = $lb_locs;
 
             update_option( 'gvseo_global_settings', $s );
-            echo '<div class="notice notice-success is-dismissible"><p><strong>✓ Settings saved.</strong></p></div>';
+            echo '<div class="notice notice-success is-dismissible"><p><strong><span class="dashicons dashicons-yes-alt" style="font-size:14px;width:14px;height:14px;vertical-align:-2px;margin-right:3px;color:var(--c-green)"></span>Settings saved.</strong></p></div>';
         }
 
         $s           = self::get();
@@ -236,7 +236,7 @@ class GVSEO_Settings {
 
             <!-- ── Organization Identity ────────────────────────────── -->
             <div class="gvseo-card">
-                <div class="gvseo-card-head"><h3>🏢 Organization</h3><p>Your brand identity — used in Organization schema, publisher fields, and knowledge graph.</p></div>
+                <div class="gvseo-card-head"><h3><span class="dashicons dashicons-building" style="font-size:16px;width:16px;height:16px;vertical-align:-2px;margin-right:4px;color:var(--c-blue)"></span>Your organization</h3><p>The name and site people already know you by.</p></div>
                 <div class="gvseo-card-body">
                     <div class="gvseo-field-row">
                         <div class="gvseo-field"><label>Organization Name</label><input type="text" name="org_name" value="<?php echo esc_attr( $s['org_name'] ); ?>"></div>
@@ -264,7 +264,7 @@ class GVSEO_Settings {
             <!-- ── Primary Address ──────────────────────────────────── -->
             <div class="gvseo-card">
                 <div class="gvseo-card-head">
-                    <h3>📍 Primary Address</h3>
+                    <h3><span class="dashicons dashicons-location" style="font-size:16px;width:16px;height:16px;vertical-align:-2px;margin-right:4px;color:var(--c-green)"></span>Where you're based</h3>
                     <p>Output as <code>schema.org/PostalAddress</code> on the Organization schema.</p>
                 </div>
                 <div class="gvseo-card-body">
@@ -289,7 +289,7 @@ class GVSEO_Settings {
             <div class="gvseo-card">
                 <div class="gvseo-card-head gvseo-flex-head">
                     <div>
-                        <h3>📍 Additional Address <span class="gvseo-tag gvseo-tag-grey">Optional</span></h3>
+                        <h3><span class="dashicons dashicons-location" style="font-size:16px;width:16px;height:16px;vertical-align:-2px;margin-right:4px;color:var(--c-green)"></span>Additional address <span class="gvseo-tag gvseo-tag-grey">Optional</span></h3>
                         <p>Add a second location — branch office, warehouse, or secondary site.</p>
                     </div>
                     <label class="gvseo-toggle" title="Enable additional address">
@@ -318,7 +318,7 @@ class GVSEO_Settings {
 
             <!-- ── Social Profiles ──────────────────────────────────── -->
             <div class="gvseo-card">
-                <div class="gvseo-card-head"><h3>🔗 Social Profiles (sameAs)</h3><p>Links your entity across the web for Google's Knowledge Graph.</p></div>
+                <div class="gvseo-card-head"><h3><span class="dashicons dashicons-admin-links" style="font-size:16px;width:16px;height:16px;vertical-align:-2px;margin-right:4px;color:var(--c-purple)"></span>Where you show up online</h3><p>Links Google can connect back to this site.</p></div>
                 <div class="gvseo-card-body">
                     <div class="gvseo-field-row">
                         <div class="gvseo-field"><label>Facebook</label><input type="url" name="social_fb" value="<?php echo esc_attr( $s['social_fb'] ); ?>"></div>
@@ -336,7 +336,7 @@ class GVSEO_Settings {
             <!-- ── Exclusions ───────────────────────────────────────── -->
             <div class="gvseo-card">
                 <div class="gvseo-card-head">
-                    <h3>🚫 Schema & SEO Exclusions</h3>
+                    <h3><span class="dashicons dashicons-hidden" style="font-size:16px;width:16px;height:16px;vertical-align:-2px;margin-right:4px;color:var(--c-muted)"></span>Schema & SEO Exclusions</h3>
                     <p>Exclude post types and individual posts from all schema output and SEO analysis. Useful for Elementor templates, Divi layouts, and other builder content that should not be indexed.</p>
                 </div>
                 <div class="gvseo-card-body">
@@ -382,7 +382,7 @@ class GVSEO_Settings {
             <div class="gvseo-card">
                 <div class="gvseo-card-head gvseo-flex-head">
                     <div>
-                        <h3>📍 Local Business Locations</h3>
+                        <h3><span class="dashicons dashicons-location" style="font-size:16px;width:16px;height:16px;vertical-align:-2px;margin-right:4px;color:var(--c-green)"></span>Local Business Locations</h3>
                         <p>Add one entry per physical location or branch. Each outputs its own <code>@type:LocalBusiness</code> JSON-LD schema — fully validated against <a href="https://validator.schema.org/" target="_blank">schema.org</a>.</p>
                     </div>
                     <button type="button" id="gvseo-add-location" class="gvseo-btn gvseo-btn-primary gvseo-btn-xs">+ Add Location</button>
@@ -397,7 +397,7 @@ class GVSEO_Settings {
                         if ( empty( $lb_locs ) ) :
                         ?>
                             <div id="gvseo-lb-empty" class="gvseo-lb-empty">
-                                <span>🏢</span>
+                                <span class="dashicons dashicons-building" style="color:var(--c-blue)"></span>
                                 <p>No locations added yet.<br>Click <strong>+ Add Location</strong> to add your first business location.</p>
                             </div>
                         <?php else : ?>
@@ -412,7 +412,7 @@ class GVSEO_Settings {
             <!-- ── CPT Schema Defaults ───────────────────────────────── -->
             <div class="gvseo-card">
                 <div class="gvseo-card-head">
-                    <h3>📦 Post Type → Schema Defaults</h3>
+                    <h3><span class="dashicons dashicons-category" style="font-size:16px;width:16px;height:16px;vertical-align:-2px;margin-right:4px;color:var(--c-blue)"></span>Post Type → Schema Defaults</h3>
                     <p>Default schema type per post type. Overridden per-page in the Schema tab of the editor.</p>
                 </div>
                 <div class="gvseo-card-body gvseo-no-pad">
@@ -447,14 +447,14 @@ class GVSEO_Settings {
 
             <!-- ── Feature Toggles ──────────────────────────────────── -->
             <div class="gvseo-card">
-                <div class="gvseo-card-head"><h3>⚙️ Global Schema Features</h3></div>
+                <div class="gvseo-card-head"><h3><span class="dashicons dashicons-admin-generic" style="font-size:16px;width:16px;height:16px;vertical-align:-2px;margin-right:4px;color:var(--c-muted)"></span>Global Schema Features</h3></div>
                 <div class="gvseo-card-body">
                     <?php
                     $toggles = [
-                        'organization' => [ '🏢 Organization Schema',    'Outputs @type:Organization with @id, address, phone, logo, and sameAs on every page.' ],
-                        'sitelinks'    => [ '🔍 Sitelinks Searchbox',     'WebSite + SearchAction markup on the homepage.' ],
-                        'breadcrumbs'  => [ '🔗 BreadcrumbList',          'Auto-built breadcrumbs on all non-home pages.' ],
-                        'woo_bridge'   => [ '🛒 WooCommerce Data Bridge',  'Auto-pull price, SKU, stock, ratings from WooCommerce products.' ],
+                        'organization' => [ 'Organization Schema',    'Outputs @type:Organization with @id, address, phone, logo, and sameAs on every page.' ],
+                        'sitelinks'    => [ 'Sitelinks Searchbox',     'WebSite + SearchAction markup on the homepage.' ],
+                        'breadcrumbs'  => [ 'BreadcrumbList',          'Auto-built breadcrumbs on all non-home pages.' ],
+                        'woo_bridge'   => [ 'WooCommerce Data Bridge',  'Auto-pull price, SKU, stock, ratings from WooCommerce products.' ],
                     ];
                     foreach ( $toggles as $key => [ $label, $desc ] ) : ?>
                         <div class="gvseo-toggle-row">
@@ -472,7 +472,7 @@ class GVSEO_Settings {
             <div class="gvseo-card">
                 <div class="gvseo-card-head gvseo-flex-head">
                     <div>
-                        <h3>🗺️ XML Sitemap</h3>
+                        <h3><span class="dashicons dashicons-location-alt" style="font-size:16px;width:16px;height:16px;vertical-align:-2px;margin-right:4px;color:var(--c-blue)"></span>XML Sitemap</h3>
                         <p>Auto-generated sitemap index. Respects all exclusion settings above. Linked in your robots.txt automatically.</p>
                     </div>
                     <a href="<?php echo esc_url( GVSEO_Sitemap::sitemap_url() ); ?>" target="_blank" class="gvseo-btn gvseo-btn-ghost gvseo-btn-xs">
@@ -482,7 +482,7 @@ class GVSEO_Settings {
                 <div class="gvseo-card-body">
                     <div class="gvseo-sitemap-info">
                         <div class="gvseo-sm-row">
-                            <span>📄 Sitemap Index</span>
+                            <span><span class="dashicons dashicons-media-document" style="font-size:14px;width:14px;height:14px;vertical-align:-2px;margin-right:3px;color:var(--c-blue)"></span>Sitemap Index</span>
                             <a href="<?php echo esc_url( home_url( '/sitemap.xml' ) ); ?>" target="_blank">
                                 <?php echo esc_html( home_url( '/sitemap.xml' ) ); ?>
                             </a>
@@ -497,7 +497,7 @@ class GVSEO_Settings {
                             $slug = sanitize_title( $type ) . 's';
                             ?>
                             <div class="gvseo-sm-row">
-                                <span>📝 <?php echo esc_html( ucfirst( $type ) ); ?></span>
+                                <span><span class="dashicons dashicons-edit" style="font-size:14px;width:14px;height:14px;vertical-align:-2px;margin-right:3px;color:var(--c-blue)"></span><?php echo esc_html( ucfirst( $type ) ); ?></span>
                                 <span>
                                     <a href="<?php echo esc_url( home_url( "/sitemap-{$slug}.xml" ) ); ?>" target="_blank">
                                         sitemap-<?php echo esc_html( $slug ); ?>.xml
@@ -507,7 +507,7 @@ class GVSEO_Settings {
                             </div>
                         <?php endforeach; ?>
                         <p class="gvseo-hint" style="margin-top:10px;">
-                            💡 Submit your sitemap to
+                            <span class="dashicons dashicons-lightbulb" style="font-size:14px;width:14px;height:14px;vertical-align:-2px;margin-right:3px;color:var(--c-yellow)"></span>Submit your sitemap to
                             <a href="https://search.google.com/search-console" target="_blank">Google Search Console</a>
                             to speed up indexing.
                         </p>
@@ -516,7 +516,7 @@ class GVSEO_Settings {
             </div>
 
             <div class="gvseo-form-footer">
-                <button type="submit" class="gvseo-btn gvseo-btn-primary">💾 Save Settings</button>
+                <button type="submit" class="gvseo-btn gvseo-btn-primary"><span class="dashicons dashicons-yes" style="font-size:14px;width:14px;height:14px;vertical-align:-2px;margin-right:3px;color:#fff"></span>Save Settings</button>
             </div>
         </form>
         </div></div>
@@ -585,10 +585,10 @@ class GVSEO_Settings {
 
     public static function nav( $active = 'dashboard' ) {
         $links = [
-            'dashboard' => [ admin_url( 'admin.php?page=grapevine-seo' ),          '📊 Dashboard' ],
-            'seo'       => [ admin_url( 'admin.php?page=grapevine-seo-seo' ),      '🔍 SEO Analysis' ],
-            'settings'  => [ admin_url( 'admin.php?page=grapevine-seo-settings' ), '⚙️ Settings' ],
-            'version'   => [ admin_url( 'admin.php?page=grapevine-seo-version' ),  '🏷️ Versions' ],
+            'dashboard' => [ admin_url( 'admin.php?page=grapevine-seo' ),          'Dashboard' ],
+            'seo'       => [ admin_url( 'admin.php?page=grapevine-seo-seo' ),      'SEO Analysis' ],
+            'settings'  => [ admin_url( 'admin.php?page=grapevine-seo-settings' ), 'Settings' ],
+            'version'   => [ admin_url( 'admin.php?page=grapevine-seo-version' ),  'Versions' ],
         ];
         echo '<div class="gvseo-nav">';
         foreach ( $links as $key => [ $url, $label ] ) {
@@ -665,7 +665,7 @@ class GVSEO_Settings {
                         <input type="checkbox" name="lb_loc[<?php echo (int) $li; ?>][enabled]" value="1" <?php checked( $enabled ); ?>>
                         <span></span>
                     </label>
-                    <button type="button" class="gvseo-btn gvseo-btn-ghost gvseo-btn-xs gvseo-lb-remove">✕ Remove</button>
+                    <button type="button" class="gvseo-btn gvseo-btn-ghost gvseo-btn-xs gvseo-lb-remove"><span class="dashicons dashicons-no-alt" style="font-size:14px;width:14px;height:14px;vertical-align:-2px;margin-right:3px;color:var(--c-red)"></span>Remove</button>
                 </div>
             </div>
             <div class="gvseo-lb-card-body">
@@ -694,7 +694,7 @@ class GVSEO_Settings {
                 </div>
 
                 <!-- Contact -->
-                <h4 class="gvseo-section-h4">📞 Contact</h4>
+                <h4 class="gvseo-section-h4"><span class="dashicons dashicons-phone" style="font-size:14px;width:14px;height:14px;vertical-align:-2px;margin-right:3px;color:var(--c-muted)"></span>Contact</h4>
                 <div class="gvseo-field-row">
                     <div class="gvseo-field">
                         <label>Phone <span class="gvseo-hint-inline">(E.164)</span></label>
@@ -717,7 +717,7 @@ class GVSEO_Settings {
                 </div>
 
                 <!-- Address -->
-                <h4 class="gvseo-section-h4">📍 Address</h4>
+                <h4 class="gvseo-section-h4"><span class="dashicons dashicons-location" style="font-size:14px;width:14px;height:14px;vertical-align:-2px;margin-right:4px;color:var(--c-green)"></span>Address</h4>
                 <div class="gvseo-field">
                     <label>Street Address</label>
                     <input type="text" name="lb_loc[<?php echo (int) $li; ?>][street]"
@@ -735,7 +735,7 @@ class GVSEO_Settings {
                 </div>
 
                 <!-- Geo -->
-                <h4 class="gvseo-section-h4">🌐 Geo Coordinates</h4>
+                <h4 class="gvseo-section-h4"><span class="dashicons dashicons-admin-site-alt3" style="font-size:14px;width:14px;height:14px;vertical-align:-2px;margin-right:3px;color:var(--c-muted)"></span>Geo Coordinates</h4>
                 <div class="gvseo-field-row">
                     <div class="gvseo-field"><label>Latitude</label>
                         <input type="text" name="lb_loc[<?php echo (int) $li; ?>][lat]" value="<?php echo esc_attr( $loc['lat'] ?? '' ); ?>" placeholder="-33.8688"></div>
@@ -746,7 +746,7 @@ class GVSEO_Settings {
                 </div>
 
                 <!-- Business Details -->
-                <h4 class="gvseo-section-h4">💳 Business Details</h4>
+                <h4 class="gvseo-section-h4"><span class="dashicons dashicons-info-outline" style="font-size:14px;width:14px;height:14px;vertical-align:-2px;margin-right:3px;color:var(--c-muted)"></span>Business Details</h4>
                 <div class="gvseo-field-row">
                     <div class="gvseo-field"><label>Price Range</label>
                         <select name="lb_loc[<?php echo (int) $li; ?>][price_range]" class="gvseo-cpt-select">
@@ -763,7 +763,7 @@ class GVSEO_Settings {
                 </div>
 
                 <!-- Opening Hours -->
-                <h4 class="gvseo-section-h4">🕐 Opening Hours</h4>
+                <h4 class="gvseo-section-h4"><span class="dashicons dashicons-clock" style="font-size:14px;width:14px;height:14px;vertical-align:-2px;margin-right:3px;color:var(--c-muted)"></span>Opening Hours</h4>
                 <div class="gvseo-hours-wrap" data-loc="<?php echo (int) $li; ?>">
                     <?php
                     $hour_groups = ! empty( $loc['hours'] ) ? $loc['hours'] : [
@@ -786,7 +786,7 @@ class GVSEO_Settings {
                                 <input type="time" name="lb_loc[<?php echo (int) $li; ?>][hour_opens][<?php echo (int) $hi; ?>]" value="<?php echo esc_attr( $hg['opens'] ); ?>">
                                 <span>to</span>
                                 <input type="time" name="lb_loc[<?php echo (int) $li; ?>][hour_closes][<?php echo (int) $hi; ?>]" value="<?php echo esc_attr( $hg['closes'] ); ?>">
-                                <button type="button" class="gvseo-btn gvseo-btn-ghost gvseo-btn-xs gvseo-remove-hours">✕</button>
+                                <button type="button" class="gvseo-btn gvseo-btn-ghost gvseo-btn-xs gvseo-remove-hours"><span class="dashicons dashicons-no-alt" style="font-size:14px;width:14px;height:14px;vertical-align:-2px;margin-right:3px;color:var(--c-red)"></span></button>
                             </div>
                         </div>
                     <?php endforeach; ?>

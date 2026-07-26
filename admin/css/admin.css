@@ -2,29 +2,29 @@
    Grapevine SEO — Admin CSS v2.1  (Light Theme)
    ═══════════════════════════════════════════════════ */
 :root {
-  --c-bg:      #f0f2f5;
+  --c-bg:      #fbf9f6;
   --c-surf:    #ffffff;
-  --c-surf2:   #f7f8fa;
-  --c-surf3:   #eef0f4;
-  --c-bdr:     #e2e6ec;
-  --c-bdr2:    #c8d0db;
-  --c-txt:     #1a2333;
-  --c-muted:   #5a6a80;
-  --c-dim:     #8fa0b4;
-  --c-blue:    #2563eb;
-  --c-blue-lt: #eff4ff;
+  --c-surf2:   #f7f2ea;
+  --c-surf3:   #f3ece0;
+  --c-bdr:     #f0e6d8;
+  --c-bdr2:    #e4d5c0;
+  --c-txt:     #2b2418;
+  --c-muted:   #8a7b68;
+  --c-dim:     #b0a08a;
+  --c-blue:    #e8935f;
+  --c-blue-lt: #fde9d7;
   --c-cyan:    #0891b2;
-  --c-green:   #059669;
-  --c-green-lt:#ecfdf5;
-  --c-yellow:  #d97706;
-  --c-yell-lt: #fffbeb;
-  --c-red:     #dc2626;
-  --c-red-lt:  #fef2f2;
-  --c-purple:  #7c3aed;
-  --c-purp-lt: #f5f3ff;
-  --c-glow:    rgba(37,99,235,.10);
-  --r:         10px;
-  --r-sm:      6px;
+  --c-green:   #5a8c6a;
+  --c-green-lt:#e6efe3;
+  --c-yellow:  #c9822f;
+  --c-yell-lt: #faf1e0;
+  --c-red:     #c9504f;
+  --c-red-lt:  #fbeceb;
+  --c-purple:  #a13d63;
+  --c-purp-lt: #fbe6ee;
+  --c-glow:    rgba(232,147,95,.12);
+  --r:         16px;
+  --r-sm:      10px;
   --font:      system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:      "JetBrains Mono","Cascadia Code",monospace;
 }
@@ -71,6 +71,9 @@
 .gvseo-kpi-yellow { border-left-color: var(--c-yellow); }
 .gvseo-kpi-purple { border-left-color: var(--c-purple); }
 .gvseo-kpi-icon { font-size: 24px; flex-shrink: 0; }
+.gvseo-kpi-icon .dashicons { width: 22px; height: 22px; font-size: 22px; }
+.gvseo-ring { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.gvseo-ring-inner { width: 42px; height: 42px; border-radius: 50%; background: var(--c-surf); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--c-txt); }
 .gvseo-kpi-val  { font-size: 28px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
 .gvseo-kpi-lbl  { font-size: 11px; color: var(--c-muted); text-transform: uppercase; letter-spacing: .4px; margin-top: 2px; }
 .gvseo-kpi-blue .gvseo-kpi-val   { color: var(--c-blue); }
