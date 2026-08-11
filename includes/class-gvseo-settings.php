@@ -71,6 +71,7 @@ class GVSEO_Settings {
             'organization'      => '1',
             'woo_bridge'        => '1',
             'meta_tags_enabled' => '1',  // ← NEW: disable to avoid duplicate OG/meta tags when Yoast/Rank Math is active
+            'sitemap_enabled'   => '1',  // ← NEW: disable when another plugin (e.g. Yoast) already serves the XML sitemap
 
             // Exclusions
             'excluded_types'    => [],           // ← NEW: user-selected types to exclude
@@ -126,6 +127,12 @@ class GVSEO_Settings {
 
         if ( isset( $_POST['gvseo_settings_nonce'] ) &&
              wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['gvseo_settings_nonce'] ) ), 'gvseo_save_settings' ) ) {
+            // Capture the sitemap toggle's prior value — if it changes in
+            // this save, rewrite rules need flushing so /sitemap.xml starts
+            // (or stops) resolving immediately rather than after WordPress
+            // eventually regenerates its rewrite cache on its own.
+            $prior_sitemap_enabled = self::get()['sitemap_enabled'] ?? '1';
+
             $s = [];
 
             // Text / URL fields
@@ -143,7 +150,7 @@ class GVSEO_Settings {
             }
 
             // Toggles
-            $toggles = [ 'breadcrumbs','sitelinks','organization','woo_bridge','org_addr2_enabled','meta_tags_enabled' ];
+            $toggles = [ 'breadcrumbs','sitelinks','organization','woo_bridge','org_addr2_enabled','meta_tags_enabled','sitemap_enabled' ];
             foreach ( $toggles as $t ) {
                 $s[ $t ] = isset( $_POST[ $t ] ) ? '1' : '0';
             }
@@ -187,7 +194,8 @@ class GVSEO_Settings {
             $s['cpt_defaults'] = $cpt_defaults;
 
             // LocalBusiness locations save
-            $lb_locs = [];
+            $lb_locs    = [];
+            $used_slugs = [];
             if ( isset( $_POST['lb_loc'] ) && is_array( $_POST['lb_loc'] ) ) {
                 foreach ( wp_unslash( $_POST['lb_loc'] ) as $li => $loc ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
                     $text_fields = [ 'type','name','description','phone','email',
@@ -200,6 +208,30 @@ class GVSEO_Settings {
                     }
                     $entry['enabled']     = isset( $loc['enabled'] )     ? '1' : '0';
                     $entry['same_as_org'] = isset( $loc['same_as_org'] ) ? '1' : '0';
+
+                    // Slug — the stable identity used to build this location's
+                    // schema @id. The slug field is a real, visible/hidden form
+                    // input that travels with its card even if admin.js renumbers
+                    // the array index on reorder/removal, so the submitted value
+                    // is always this location's own slug, not a stale one from
+                    // whatever used to sit at this array position. Only auto-
+                    // derive from name/city the first time, when the field is
+                    // genuinely empty (a brand-new location).
+                    $slug = sanitize_title( $loc['slug'] ?? '' );
+                    if ( ! $slug ) {
+                        $basis = $entry['name'] ?: $entry['city'] ?: ( 'location-' . ( (int) $li + 1 ) );
+                        $slug  = sanitize_title( $basis );
+                    }
+                    // Ensure uniqueness within this save — two locations must
+                    // never resolve to the same @id.
+                    $base_slug = $slug;
+                    $n = 2;
+                    while ( isset( $used_slugs[ $slug ] ) ) {
+                        $slug = $base_slug . '-' . $n++;
+                    }
+                    $used_slugs[ $slug ] = true;
+                    $entry['slug'] = $slug;
+
                     // Hours for this location
                     $entry['hours'] = [];
                     if ( isset( $loc['hour_days'] ) && is_array( $loc['hour_days'] ) ) {
@@ -218,6 +250,17 @@ class GVSEO_Settings {
             $s['lb_locations'] = $lb_locs;
 
             update_option( 'gvseo_global_settings', $s );
+
+            // Sitemap toggle changed — flush so /sitemap.xml starts/stops
+            // resolving immediately rather than waiting on WordPress's own
+            // rewrite cache to eventually catch up.
+            if ( $prior_sitemap_enabled !== $s['sitemap_enabled'] ) {
+                update_option( 'gvseo_flush_rewrite_rules', '1' );
+                if ( class_exists( 'GVSEO_Sitemap' ) ) {
+                    GVSEO_Sitemap::maybe_flush_rewrite_rules();
+                }
+            }
+
             echo '<div class="notice notice-success is-dismissible"><p><strong><span class="dashicons dashicons-yes-alt" style="font-size:14px;width:14px;height:14px;vertical-align:-2px;margin-right:3px;color:var(--c-green)"></span>Settings saved.</strong></p></div>';
         }
 
@@ -473,6 +516,35 @@ class GVSEO_Settings {
                 </div>
             </div>
 
+            <!-- ── XML Sitemap ──────────────────────────────────────── -->
+            <div class="gvseo-card">
+                <div class="gvseo-card-head">
+                    <h3><span class="dashicons dashicons-location-alt" style="font-size:16px;width:16px;height:16px;vertical-align:-2px;margin-right:4px;color:var(--c-blue)"></span>XML Sitemap</h3>
+                    <p>Controls whether Grapevine SEO generates and serves its own <code>/sitemap.xml</code>.</p>
+                </div>
+                <div class="gvseo-card-body">
+                    <?php if ( GVSEO_Compat::has_seo_plugin() ) : ?>
+                        <div class="gvseo-notice gvseo-notice-warning" style="margin-bottom:14px;padding:12px 14px;border-radius:var(--r-sm);background:var(--c-yell-lt);border:1px solid var(--c-yellow);font-size:12px;color:var(--c-txt);">
+                            <strong><?php echo esc_html( GVSEO_Compat::active_plugin_name() ); ?> detected</strong> — if its XML sitemap feature is also enabled, having two active sitemap generators means only one should actually be submitted in Google Search Console. They're unlikely to collide at the exact same URL (Grapevine SEO uses <code>/sitemap.xml</code>; <?php echo esc_html( GVSEO_Compat::active_plugin_name() ); ?> typically uses a different path), but it's worth confirming only one is authoritative rather than running both.
+                            Check <?php echo esc_html( GVSEO_Compat::active_plugin_name() ); ?>'s own sitemap setting, then decide which one should stay on.
+                        </div>
+                    <?php endif; ?>
+                    <div class="gvseo-toggle-row">
+                        <div>
+                            <strong>Generate XML Sitemap</strong>
+                            <p>When off, Grapevine SEO's <code>/sitemap.xml</code>, per-post-type sub-sitemaps, and the <code>Sitemap:</code> line in robots.txt are all disabled. Rewrite rules are flushed automatically when you change this.</p>
+                        </div>
+                        <label class="gvseo-toggle">
+                            <input type="checkbox" name="sitemap_enabled" value="1" <?php checked( $s['sitemap_enabled'], '1' ); ?>>
+                            <span></span>
+                        </label>
+                    </div>
+                    <?php if ( '1' === $s['sitemap_enabled'] ) : ?>
+                        <p class="gvseo-hint" style="margin-top:10px;">Current sitemap: <a href="<?php echo esc_url( home_url( '/sitemap.xml' ) ); ?>" target="_blank"><?php echo esc_html( home_url( '/sitemap.xml' ) ); ?></a></p>
+                    <?php endif; ?>
+                </div>
+            </div>
+
             <!-- ── Feature Toggles ──────────────────────────────────── -->
             <div class="gvseo-card">
                 <div class="gvseo-card-head"><h3><span class="dashicons dashicons-admin-generic" style="font-size:16px;width:16px;height:16px;vertical-align:-2px;margin-right:4px;color:var(--c-muted)"></span>Global Schema Features</h3></div>
@@ -714,6 +786,14 @@ class GVSEO_Settings {
                             placeholder="e.g. Main Office, North Branch"
                             class="gvseo-lb-name-input">
                     </div>
+                </div>
+                <div class="gvseo-field">
+                    <label>URL Slug <span class="gvseo-hint-inline">(sets this location's permanent schema @id — changing it later changes the entity's identity to Google, so only edit if you know why)</span></label>
+                    <input type="text" name="lb_loc[<?php echo (int) $li; ?>][slug]"
+                        value="<?php echo esc_attr( $loc['slug'] ?? '' ); ?>"
+                        placeholder="auto-generated from name if left blank"
+                        class="gvseo-lb-slug-input">
+                    <p class="gvseo-hint gvseo-lb-id-preview">Schema @id: <code><?php echo esc_html( trailingslashit( $g['org_url'] ?? '' ) . ( ! empty( $loc['slug'] ) ? sanitize_title( $loc['slug'] ) : '{slug}' ) . '/#business' ); ?></code></p>
                 </div>
                 <div class="gvseo-field">
                     <label>Description</label>

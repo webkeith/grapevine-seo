@@ -6,7 +6,7 @@ Tested up to: 7.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
-Stable tag: 2.5.0
+Stable tag: 2.12.0
 Author: Keith Quinones
 Author URI: https://github.com/webkeith
 
@@ -17,11 +17,12 @@ JSON-LD Schema markup + full SEO analysis engine with per-page scoring, site-wid
 Grapevine SEO is a dual-purpose plugin combining Google Rich Results-compliant JSON-LD schema output with a comprehensive SEO analysis engine — built for Grapevine clients.
 
 = Schema Markup =
-* 15 schema types: Article, BlogPosting, NewsArticle, WebPage, FAQPage, HowTo, Product, Event, Recipe, LocalBusiness, JobPosting, Course, SoftwareApplication, VideoObject, Custom JSON-LD
+* 16 schema types: Article, BlogPosting, NewsArticle, WebPage, FAQPage, HowTo, Product, Event, Recipe, Person, LocalBusiness, JobPosting, Course, SoftwareApplication, VideoObject, Custom JSON-LD
 * Google Rich Results compliant — headline ≤110 chars, Event requires eventStatus/eventAttendanceMode, Product uses ratingCount, Recipe requires image
 * WooCommerce bridge: pulls live price, SKU, stock, ratings, and gallery automatically
 * Per-CPT default schema type; exclusion system hides Elementor templates, builder layouts, and WordPress system types
 * Organization schema with primary and additional address, phone, and sameAs social profiles (Facebook, X/Twitter, Instagram, LinkedIn, YouTube, TikTok)
+* Multi-location LocalBusiness support with stable, slug-based @id per location, linked to the Organization via department/parentOrganization
 * BreadcrumbList auto-built from post hierarchy
 * WebSite + Sitelinks Searchbox on homepage
 
@@ -57,9 +58,10 @@ Grapevine SEO is a dual-purpose plugin combining Google Rich Results-compliant J
 * Version Control admin page with changelog, migration status table, and release guide
 
 == Features ==
-* Per-page schema override with 15 schema types
+* Per-page schema override with 16 schema types
 * Two-tab post editor meta box: Schema | SEO Analysis
 * Focus keyword, meta description with character counter, OG tags, no-index toggle
+* Toggle to disable Grapevine's own meta description/Open Graph output when another SEO plugin (Yoast, Rank Math) already handles it
 * WooCommerce data bridge (price, SKU, stock, ratings, gallery, variants)
 * CPT-specific default schema types
 * Exclusion system for builder templates, Elementor library, and custom post types
@@ -74,7 +76,7 @@ Grapevine SEO is a dual-purpose plugin combining Google Rich Results-compliant J
 == Frequently Asked Questions ==
 
 = Does this work with Yoast SEO or Rank Math? =
-Yes. Grapevine SEO detects if Yoast SEO or Rank Math is active and reads their stored keyword and meta values for SEO analysis scoring. Schema output is independent of those plugins.
+Yes. Grapevine SEO detects if Yoast SEO or Rank Math is active and reads their stored keyword and meta values for SEO analysis scoring. Schema output is independent of those plugins. If Yoast or Rank Math is already outputting meta description/Open Graph tags, disable Grapevine's own copy under Global Settings → Meta & Social Tags to avoid duplicate tags.
 
 = Does this generate an XML sitemap? =
 Yes. A sitemap index is available at https://grapevinepr.com.au/sitemap.xml. It is linked in your robots.txt automatically.
@@ -82,7 +84,41 @@ Yes. A sitemap index is available at https://grapevinepr.com.au/sitemap.xml. It 
 = Does this support WooCommerce? =
 Yes. The WooCommerce bridge pulls live price, SKU, stock status, ratings, and product gallery images directly from WooCommerce.
 
+= How does multi-location LocalBusiness schema work? =
+Add each location under Global Settings → LocalBusiness Locations. Each location gets its own PostalAddress, phone, opening hours, and a persistent URL slug that sets its schema @id (format: https://yoursite.com/[slug]/#business). The slug is generated once from the location's name and never changes automatically afterward, even if you reorder or remove other locations — this keeps each location's schema identity stable over time. All enabled locations are linked to the Organization schema via department/parentOrganization references.
+
 == Changelog ==
+
+= 2.12.0 =
+* Added toggle to disable Grapevine SEO's own XML sitemap (Global Settings → XML Sitemap) for sites already running another plugin's sitemap (e.g. Yoast SEO)
+* Auto-detects Yoast SEO / Rank Math and shows a notice recommending only one sitemap be submitted in Google Search Console
+* Rewrite rules now flush automatically when this toggle changes, so /sitemap.xml starts or stops resolving immediately
+
+= 2.11.1 =
+* Added the simple `openingHours` string property (e.g. "Mo-Fr 09:00-17:00") to LocalBusiness output, alongside the existing structured `openingHoursSpecification` — some validators flag `openingHours` as missing even when the structured form is present
+* No change to `geo` output — GeoCoordinates were already correctly emitted whenever a location has latitude/longitude set in Global Settings; if a validator flags `geo` as missing, add coordinates for that location under Global Settings → LocalBusiness Locations
+
+= 2.11.0 =
+* Fixed: LocalBusiness @id was derived from array index (#localbusiness, #localbusiness-1) and silently changed if a location was reordered or an earlier location removed
+* Added persistent, admin-editable URL slug per LocalBusiness location; @id is now stable and slug-scoped (https://[domain]/[slug]/#business)
+* Migration backfills a slug for every existing location on update — each location's live @id changes once, from the old index-based form to the new slug-based form
+* Consolidated @id generation into a single shared method (local_business_id) used by both the standalone LocalBusiness JSON-LD blocks and the Organization's department references, removing a previous duplicate-logic bug risk
+* No changes to Service, Review, Organization identity, or FAQ schema
+
+= 2.10.0 =
+* Added toggle to disable Grapevine SEO's own meta description/Open Graph tag output (Global Settings → Meta & Social Tags)
+* Auto-detects Yoast SEO / Rank Math and shows a warning when both plugins would output competing OG tags
+* Fixes duplicate/conflicting og:title, og:description, og:url, og:type tags on sites also running Yoast or Rank Math
+
+= 2.9.0 =
+* Added Person schema type for staff/team bio pages, with Job Title, Works For, Email, and Same As fields
+* Name pulled from page title, image from featured image, description from excerpt
+
+= 2.8.0 =
+* Redesigned Dashboard and Global Settings admin UI: warmer palette, Dashicons instead of emoji, softened copy on Organization/Address/Social sections
+
+= 2.7.1 =
+* Fixed BreadcrumbList missing intermediate ancestor pages for hierarchical Pages — breadcrumbs now walk the full post_parent chain instead of relying on post-type archive links (which regular Pages don't have)
 
 = 2.5.0 =
 * Added TikTok to social profiles (sameAs)
@@ -120,16 +156,16 @@ Yes. The WooCommerce bridge pulls live price, SKU, stock status, ratings, and pr
 * CPT-aware breadcrumbs
 
 = 2.0.0 =
-<<<<<<< HEAD
 * Initial release of Grapevine SEO
-=======
 * Full prefix rename: RAS_ → GVSEO_, _ras_ → _gvseo_
->>>>>>> 0d2a8a68fc1f3939cc462097681e414f0c8118cc
 * GitHub Update Checker integration (Plugin Update Checker v5.3)
 * SEO Analysis Engine with 22 initial checks
 * Light theme admin interface
 
 == Upgrade Notice ==
 
-= 2.5.0 =
-Adds TikTok social field and restores compatibility with Yoast SEO and Rank Math. Safe to update.
+= 2.11.0 =
+LocalBusiness @id is now slug-based instead of index-based — each location's schema @id will change once on update. Re-validate each location page in Google's Rich Results Test after updating. See the FAQ for how location slugs work.
+
+= 2.10.0 =
+Adds a toggle to prevent duplicate meta/OG tags on sites running Yoast SEO or Rank Math. If you have another SEO plugin active, visit Global Settings → Meta & Social Tags and turn Grapevine's own meta/OG output off.

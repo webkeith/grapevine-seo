@@ -42,6 +42,7 @@ class GVSEO_Sitemap {
 
     /* ── Rewrite rules ────────────────────────────────────────────── */
     public static function add_rewrite_rules() {
+        if ( ! self::is_enabled() ) { return; }
         // Sitemap index
         add_rewrite_rule( '^sitemap\.xml$', 'index.php?gvseo_sitemap=index', 'top' );
         // Sub-sitemaps with optional page number: sitemap-posts.xml, sitemap-pages-2.xml
@@ -52,6 +53,17 @@ class GVSEO_Sitemap {
         );
     }
 
+    /**
+     * Whether Grapevine SEO's own sitemap should be active. Off by default
+     * choice lives in Global Settings — kept as a simple option check (not
+     * cached in a static var) since it's only read on 'init' and on the rare
+     * template_redirect hit for a sitemap URL, not on every page load.
+     */
+    public static function is_enabled() {
+        $s = get_option( 'gvseo_global_settings', [] );
+        return '1' === ( $s['sitemap_enabled'] ?? '1' );
+    }
+
     public static function add_query_vars( $vars ) {
         $vars[] = 'gvseo_sitemap';
         $vars[] = 'gvseo_sitemap_page';
@@ -60,6 +72,7 @@ class GVSEO_Sitemap {
 
     /* ── Route requests ───────────────────────────────────────────── */
     public static function handle_request() {
+        if ( ! self::is_enabled() ) { return; }
         $sitemap = get_query_var( 'gvseo_sitemap' );
         if ( ! $sitemap ) { return; }
 
@@ -241,7 +254,7 @@ class GVSEO_Sitemap {
 
     /* ── robots.txt integration ─────────────────────────────────────── */
     public static function add_to_robots( $output, $public ) {
-        if ( $public ) {
+        if ( $public && self::is_enabled() ) {
             $output .= "\nSitemap: " . home_url( '/sitemap.xml' ) . "\n";
         }
         return $output;

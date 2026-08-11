@@ -3,7 +3,7 @@
  * Plugin Name:  Grapevine SEO
  * Plugin URI:   https://github.com/webkeith/grapevine-seo
  * Description:  JSON-LD Schema markup + full SEO analysis engine with per-page scoring, site-wide reports, and rich results compliance.
- * Version:      2.10.0
+ * Version:      2.12.0
  * Author:       Keith Quinones
  * Author URI:   https://github.com/webkeith
  * License:      GPL v2 or later
@@ -34,7 +34,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /* ── Plugin constants ─────────────────────────────────── */
-define( 'GVSEO_VERSION',     '2.10.0' );
+define( 'GVSEO_VERSION',     '2.12.0' );
 define( 'GVSEO_DIR',         plugin_dir_path( __FILE__ ) );
 define( 'GVSEO_URL',         plugin_dir_url( __FILE__ ) );
 define( 'GVSEO_BASE',        plugin_basename( __FILE__ ) );
@@ -176,6 +176,7 @@ register_activation_hook( __FILE__, function () {
             'sitelinks'    => '1',
             'organization' => '1',
             'meta_tags_enabled' => '1',
+            'sitemap_enabled'   => '1',
         ] );
     }
     update_option( 'gvseo_version', GVSEO_VERSION );

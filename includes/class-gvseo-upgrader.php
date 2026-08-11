@@ -41,6 +41,8 @@ class GVSEO_Upgrader {
         '2.6.0' => 'migrate_2_6_0',
         '2.7.0' => 'migrate_2_7_0',
         '2.10.0' => 'migrate_2_10_0',
+        '2.11.0' => 'migrate_2_11_0',
+        '2.12.0' => 'migrate_2_12_0',
     ];
 
     /* ═══════════════════════════════════════════════════════════════
@@ -328,6 +330,76 @@ class GVSEO_Upgrader {
             update_option( 'gvseo_global_settings', $settings );
         }
         return 'Meta/OG tag output toggle added.';
+    }
+
+    /**
+     * v2.11.0 — Stable, slug-based @id for multi-location LocalBusiness schema.
+     *
+     * BREAKING (one-time, deliberate): prior versions built each location's
+     * @id from its array index (#localbusiness, #localbusiness-1, ...), which
+     * silently changed if a location was reordered or an earlier one removed
+     * — the schema @id is supposed to be a permanent entity identifier, so an
+     * index-based scheme was never actually stable. This migration backfills
+     * a persistent slug for every existing location (derived from its name,
+     * falling back to city, falling back to a positional default), which the
+     * frontend now uses to build @id as https://[domain]/[slug]/#business.
+     *
+     * After updating, each location's live @id on the site WILL change once
+     * from the old #localbusiness / #localbusiness-N form to the new
+     * slug-based form — re-run Google's Rich Results Test / Schema.org
+     * validator against each location after this update to confirm both
+     * resolve as distinct entities under their new @id.
+     */
+    private static function migrate_2_11_0() {
+        $settings = get_option( 'gvseo_global_settings', [] );
+        $locs     = $settings['lb_locations'] ?? [];
+        if ( empty( $locs ) ) {
+            return 'No LocalBusiness locations to migrate.';
+        }
+
+        $used  = [];
+        $count = 0;
+        foreach ( $locs as $li => &$loc ) {
+            if ( ! empty( $loc['slug'] ) ) {
+                $used[ sanitize_title( $loc['slug'] ) ] = true;
+                continue;
+            }
+            $basis = $loc['name'] ?? '';
+            if ( ! $basis ) { $basis = $loc['city'] ?? ''; }
+            if ( ! $basis ) { $basis = 'location-' . ( (int) $li + 1 ); }
+            $slug      = sanitize_title( $basis );
+            $base_slug = $slug;
+            $n = 2;
+            while ( isset( $used[ $slug ] ) ) {
+                $slug = $base_slug . '-' . $n++;
+            }
+            $used[ $slug ] = true;
+            $loc['slug']   = $slug;
+            $count++;
+        }
+        unset( $loc );
+
+        if ( $count > 0 ) {
+            $settings['lb_locations'] = $locs;
+            update_option( 'gvseo_global_settings', $settings );
+        }
+        return $count . ' LocalBusiness location(s) assigned a stable slug/@id.';
+    }
+
+    /**
+     * v2.12.0 — XML sitemap output toggle.
+     * Defaults to '1' (enabled) — same non-breaking rollout pattern as
+     * meta_tags_enabled in 2.10.0. Sites already running another plugin's
+     * (e.g. Yoast) sitemap can turn Grapevine SEO's off under Global
+     * Settings → XML Sitemap.
+     */
+    private static function migrate_2_12_0() {
+        $settings = get_option( 'gvseo_global_settings', [] );
+        if ( ! array_key_exists( 'sitemap_enabled', $settings ) ) {
+            $settings['sitemap_enabled'] = '1';
+            update_option( 'gvseo_global_settings', $settings );
+        }
+        return 'XML sitemap output toggle added.';
     }
 
     /* ═══════════════════════════════════════════════════════════════

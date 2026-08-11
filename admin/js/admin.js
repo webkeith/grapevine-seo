@@ -777,6 +777,8 @@
                 '<div class="gvseo-field"><label>Location / Branch Name</label>' +
                     '<input type="text" name="lb_loc[' + li + '][name]" class="gvseo-lb-name-input" placeholder="e.g. Main Office, North Branch"></div>' +
             '</div>' +
+            '<div class="gvseo-field"><label>URL Slug <span class="gvseo-hint-inline">(auto-generated from name if left blank; sets this location&#39;s schema @id)</span></label>' +
+                '<input type="text" name="lb_loc[' + li + '][slug]" class="gvseo-lb-slug-input" placeholder="auto-generated from name if left blank"></div>' +
             '<div class="gvseo-field"><label>Street Address</label><input type="text" name="lb_loc[' + li + '][street]"></div>' +
             '<div class="gvseo-field-row" style="margin-top:10px;">' +
                 '<div class="gvseo-field"><label>City</label><input type="text" name="lb_loc[' + li + '][city]"></div>' +

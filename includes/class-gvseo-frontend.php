@@ -246,10 +246,13 @@ class GVSEO_Frontend {
          * the department relationship with the full entity data via JSON-LD
          * entity linking. This avoids duplication and is schema.org-compliant.
          *
+         * @id values come from local_business_id() — slug-based and stable
+         * across reordering/removal of other locations, NOT array-index-based.
+         *
          * Produces:
          *   "department": [
-         *     { "@type": "LocalBusiness", "@id": "...#localbusiness" },
-         *     { "@type": "LocalBusiness", "@id": "...#localbusiness-1" }
+         *     { "@type": "LocalBusiness", "@id": "https://site.com/melbourne/#business" },
+         *     { "@type": "LocalBusiness", "@id": "https://site.com/sydney/#business" }
          *   ]
          * ─────────────────────────────────────────────────────────── */
         $lb_locations = $g['lb_locations'] ?? [];
@@ -258,7 +261,7 @@ class GVSEO_Frontend {
             if ( ( $loc['enabled'] ?? '1' ) !== '1' ) { continue; }
             $departments[] = [
                 '@type' => ! empty( $loc['type'] ) ? $loc['type'] : 'LocalBusiness',
-                '@id'   => $url . ( $li > 0 ? '#localbusiness-' . (int) $li : '#localbusiness' ),
+                '@id'   => self::local_business_id( $loc, $li, $g ),
             ];
         }
 
@@ -553,17 +556,44 @@ class GVSEO_Frontend {
      * @param  array $g Global settings.
      * @return array|null
      */
+    /**
+     * Stable, slug-scoped @id for a LocalBusiness location.
+     *
+     * IMPORTANT: this must NOT derive from array index ($li) — array
+     * indices shift whenever a location is reordered or an earlier one
+     * is removed (see admin.js reindexLocations()), which would silently
+     * change a location's @id and make it look like a new/different
+     * entity to Google and any other schema consumer that cached the
+     * old @id. The slug is a persisted, admin-set field that stays with
+     * its location regardless of array position.
+     *
+     * Format: https://[domain]/[location-slug]/#business
+     */
+    public static function local_business_id( $loc, $li, $g ) {
+        $site_url = trailingslashit( $g['org_url'] );
+        $slug     = ! empty( $loc['slug'] ) ? sanitize_title( $loc['slug'] ) : '';
+
+        if ( $slug ) {
+            return $site_url . $slug . '/#business';
+        }
+
+        // Legacy fallback only — should not occur once the 2.11.0 migration
+        // has backfilled slugs for all existing locations. Kept so a location
+        // added and rendered in the same request before its first save (slug
+        // not yet persisted) still gets a usable, if temporary, @id.
+        return $site_url . ( $li > 0 ? '#localbusiness-' . (int) $li : '#localbusiness' );
+    }
+
     public static function output_local_business( $loc, $li, $g ) {
         $site_url = trailingslashit( $g['org_url'] );
         $lb_name  = ! empty( $loc['name'] ) ? $loc['name'] : $g['org_name'];
         $lb_type  = ! empty( $loc['type'] ) ? $loc['type'] : 'LocalBusiness';
         $lb_url   = $g['org_url'];
 
-        $id_suffix = $li > 0 ? '#localbusiness-' . (int) $li : '#localbusiness';
         $s = [
             '@context' => 'https://schema.org',
             '@type'    => $lb_type,
-            '@id'      => $site_url . $id_suffix,
+            '@id'      => self::local_business_id( $loc, $li, $g ),
             'name'     => $lb_name,
             'url'      => $lb_url,
         ];
@@ -638,8 +668,17 @@ class GVSEO_Frontend {
             'Saturday'  => 'https://schema.org/Saturday',
             'Sunday'    => 'https://schema.org/Sunday',
         ];
+        // Two-letter abbreviations for the simple openingHours string format,
+        // in weekday order so contiguous selections can be compressed to
+        // ranges (e.g. Mo-Fr) rather than listed day-by-day.
+        $day_abbr_order = [
+            'Monday' => 'Mo', 'Tuesday' => 'Tu', 'Wednesday' => 'We',
+            'Thursday' => 'Th', 'Friday' => 'Fr', 'Saturday' => 'Sa', 'Sunday' => 'Su',
+        ];
+        $week_order = array_keys( $day_abbr_order );
 
-        $hours_spec = [];
+        $hours_spec    = [];
+        $opening_hours = [];
         foreach ( (array) ( $loc['hours'] ?? [] ) as $group ) {
             if ( empty( $group['days'] ) || empty( $group['opens'] ) || empty( $group['closes'] ) ) {
                 continue;
@@ -657,9 +696,32 @@ class GVSEO_Frontend {
                 'opens'      => $group['opens'],
                 'closes'     => $group['closes'],
             ];
+
+            // Simple string format: "Mo-Fr 09:00-17:00" (contiguous days
+            // compressed to a range; non-contiguous groups fall back to a
+            // comma-separated list — both are valid schema.org syntax).
+            $selected = array_values( array_intersect( $week_order, (array) $group['days'] ) );
+            if ( ! $selected ) { continue; }
+            $ranges = [];
+            $start  = $selected[0];
+            $prev   = $selected[0];
+            foreach ( array_slice( $selected, 1 ) as $day ) {
+                $is_next = array_search( $day, $week_order, true ) === array_search( $prev, $week_order, true ) + 1;
+                if ( ! $is_next ) {
+                    $ranges[] = ( $start === $prev ) ? $day_abbr_order[ $start ] : $day_abbr_order[ $start ] . '-' . $day_abbr_order[ $prev ];
+                    $start = $day;
+                }
+                $prev = $day;
+            }
+            $ranges[] = ( $start === $prev ) ? $day_abbr_order[ $start ] : $day_abbr_order[ $start ] . '-' . $day_abbr_order[ $prev ];
+
+            $opening_hours[] = implode( ',', $ranges ) . ' ' . $group['opens'] . '-' . $group['closes'];
         }
         if ( $hours_spec ) {
             $s['openingHoursSpecification'] = $hours_spec;
+        }
+        if ( $opening_hours ) {
+            $s['openingHours'] = $opening_hours;
         }
 
         // sameAs — inherit from org social profiles
